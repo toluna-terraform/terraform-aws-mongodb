@@ -42,7 +42,6 @@ module "mongodb" {
   ip_whitelist          = local.ip_whitelist
 }```
 
-<!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 ## Requirements
 
 | Name | Version |
@@ -83,5 +82,3 @@ No inputs.
 
 ## Outputs
 No Outputs.
-
-<!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
