@@ -1,5 +1,5 @@
 # terraform-aws-mongodb
-Integrating MongoDB Atlas with AWS infra
+Integrating MongoDB Atlas with AWS infra [Terraform module](https://registry.terraform.io/modules/toluna-terraform/terraform-aws-mongodb/latest)
 
 ## Requirements
 The module requires some configurations for Atlas MongoDB
@@ -28,6 +28,7 @@ The following resources will be created:
 - Upon destroy if MongoDB dumps bucket does not exist it will be created
 
 ## Usage
+```
 module "mongodb" {
   source                = "toluna-terraform/terraform-aws-mongodb"
   version               = "~>0.0.1"
@@ -39,4 +40,4 @@ module "mongodb" {
   backup_on_destroy     = true
   restore_on_create     = true
   ip_whitelist          = local.ip_whitelist
-}
+}```
