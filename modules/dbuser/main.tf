@@ -1,3 +1,11 @@
+terraform {
+  required_providers {
+    mongodbatlas = {
+      source = "mongodb/mongodbatlas"
+      version = "0.9.0"
+    }
+  }
+}
 resource "random_password" "password" {
   length   = 14
   special  = false
@@ -32,12 +40,7 @@ resource "mongodbatlas_database_user" "main" {
   auth_database_name = "admin"
 
   roles {
-    role_name     = "${var.app_name}-${var.environment}-dbAdmin"
+    role_name     = "readWrite"
     database_name = "${var.app_name}-${var.environment}-db"
-  }
-
-  scopes {
-    name   = "${var.app_name}-${var.environment}"
-    type = "CLUSTER"
   }
 }

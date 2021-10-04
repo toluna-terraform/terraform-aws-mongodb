@@ -1,3 +1,11 @@
+terraform {
+  required_providers {
+    mongodbatlas = {
+      source = "mongodb/mongodbatlas"
+      version = "0.9.0"
+    }
+  }
+}
 resource "mongodbatlas_cluster" "main" {
   project_id                   = var.atlasprojectid
   name                         = "${var.app_name}-${var.environment}"
@@ -24,12 +32,12 @@ resource "null_resource" "db_persist" {
     when    = destroy
     on_failure = fail
       command = <<-EOT
-        ${path.module}/../files/mongo_actions.sh chorus mongo_backup ${self.triggers.address}
+        ${path.module}/../../files/mongo_actions.sh chorus mongo_backup ${self.triggers.address}
       EOT
   }
   provisioner "local-exec" {
       command = <<-EOT
-        ${path.module}/../files/mongo_actions.sh chorus mongo_restore ${self.triggers.address}
+        ${path.module}/../../files/mongo_actions.sh chorus mongo_restore ${self.triggers.address}
       EOT
   }
 }

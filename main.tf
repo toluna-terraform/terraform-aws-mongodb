@@ -1,17 +1,19 @@
-module "mongodb-roles" {
-  source                   = "./modules/roles"
-  environment              = var.environment
-  app_name                 = var.app_name
-  atlasprojectid           = var.atlasprojectid
-  atlas_region             = var.atlas_region
-}
+
+# module "mongodb-roles" {
+#   source                   = "./modules/roles"
+#   environment              = var.environment
+#   app_name                 = var.app_name
+#   atlasprojectid           = var.atlasprojectid
+# }
 
 module "mongodb-users" {
   source                   = "./modules/dbuser"
   environment              = var.environment
   app_name                 = var.app_name
   atlasprojectid           = var.atlasprojectid
-  atlas_region             = var.atlas_region
+  # depends_on = [
+  #   module.mongodb-roles
+  # ]
 }
 
 module "mongodb-cluster" {
