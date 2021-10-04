@@ -82,5 +82,3 @@ module "mongodb" {
   restore_on_create     = true
   ip_whitelist          = local.ip_whitelist
 }```
-
-
