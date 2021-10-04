@@ -15,7 +15,4 @@ variable "environment" {
   description = "Environment name"
 }
 
-variable "atlas_num_of_replicas" {
-  description = "Number of replicas"
-}
 

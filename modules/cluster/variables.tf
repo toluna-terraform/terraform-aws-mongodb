@@ -3,20 +3,8 @@ variable "atlas_region" {
   description = "Atlas Region"
 }
 
-variable "atlasorgid" {
-  description = "Atlas Org ID"
-}
-
 variable "atlasprojectid" {
   description = "Atlas Project ID"
-}
-
-variable "atlas_public_key" {
-  description = "Atlas Public API Key"
-}
-
-variable "atlas_private_key" {
-  description = "Atlas Private API Key"
 }
 
 variable "app_name" {
