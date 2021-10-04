@@ -24,7 +24,18 @@ resource "mongodbatlas_cluster" "main" {
   
 }
 
-resource "null_resource" "db_persist" {
+resource "aws_ssm_parameter" "db_hostname" {
+  name        = "/infra/${var.app_name}/${var.environment}-db-host"
+  description = "terraform_db_username"
+  type        = "SecureString"
+  value       = "${mongodbatlas_cluster.main.srv_address}"
+  depends_on = [
+    mongodbatlas_cluster.main
+  ]
+}
+
+resource "null_resource" "db_backup" {
+  count = var.backup_on_destroy ? 1 : 0
   triggers = {
     address = "${mongodbatlas_cluster.main.srv_address}"
   }
@@ -35,10 +46,16 @@ resource "null_resource" "db_persist" {
         ${path.module}/../../files/mongo_actions.sh chorus mongo_backup ${self.triggers.address}
       EOT
   }
+}
+
+resource "null_resource" "db_restore" {
+  count = var.restore_on_create ? 1 : 0
+  triggers = {
+    address = "${mongodbatlas_cluster.main.srv_address}"
+  }
   provisioner "local-exec" {
       command = <<-EOT
         ${path.module}/../../files/mongo_actions.sh chorus mongo_restore ${self.triggers.address}
       EOT
   }
 }
-

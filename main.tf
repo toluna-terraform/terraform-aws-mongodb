@@ -23,4 +23,7 @@ module "mongodb-cluster" {
   atlasprojectid           = var.atlasprojectid
   atlas_region             = var.atlas_region
   atlas_num_of_replicas    = var.atlas_num_of_replicas
+  backup_on_destroy        = var.backup_on_destroy
+  restore_on_create        = var.restore_on_create
 }
+
