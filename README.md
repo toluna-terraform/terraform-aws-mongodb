@@ -69,7 +69,7 @@ No inputs.
 No Outputs.
 
 ## Usage
-```
+```hcl
 module "mongodb" {
   source                = "toluna-terraform/terraform-aws-mongodb"
   version               = "~>0.0.1" // Change to the required version.
