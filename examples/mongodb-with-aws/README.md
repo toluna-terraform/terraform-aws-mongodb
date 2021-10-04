@@ -29,7 +29,12 @@ Note that this example may create resources which can cost money (AWS AtlasMongo
 
 ## Providers
 
-No providers.
+| Name | Version |
+|------|---------|
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 3.59 |
+| <a name="provider_mongodbatlas"></a> [mongodbatlas](#provider\_mongodbatlas) | >= 0.9.0 |
+| <a name="provider_random"></a> [random](#provider\_random) | >= 3.1.0 |
+| <a name="provider_null"></a> [null](#provider\ null) | >= 3.1.0 |
 
 ## Modules
 
