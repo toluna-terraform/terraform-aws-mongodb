@@ -13,7 +13,8 @@ provider "mongodbatlas" {
 }
 
 module "mongodb" {
-  source                = "toluna-terraform/terraform-aws-mongodb"
+  source                = "toluna-terraform/mongodb/aws"
+  version               = "~>0.0.1" // Change to the required version.
   environment           = "test-environment"
   app_name              = "test-app"
   atlasprojectid        = "1234567890abcdefghijklmno"
