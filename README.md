@@ -26,3 +26,17 @@ The following resources will be created:
   - db_password
   - db_hostname (MongoDB connection string)
 - Upon destroy if MongoDB dumps bucket does not exist it will be created
+
+## Usage
+module "mongodb" {
+  source                = "toluna-terraform/terraform-aws-mongodb"
+  version               = "~>0.0.1"
+  environment           = local.environment
+  app_name              = local.app_name
+  atlasprojectid        = var.atlasprojectid
+  atlas_region          = var.atlas_region
+  atlas_num_of_replicas = local.env_vars.atlas_num_of_replicas
+  backup_on_destroy     = true
+  restore_on_create     = true
+  ip_whitelist          = local.ip_whitelist
+}
