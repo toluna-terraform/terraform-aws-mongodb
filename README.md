@@ -4,10 +4,12 @@ Integrating MongoDB Atlas with AWS infra
 ## Requirements
 The module requires some configurations for Atlas MongoDB
 #### Minimum requirements:
-required_providers = mongodbatlas; source = "mongodb/mongodbatlas"; version = "0.9.0"
-mongodbatlas public_key (api key for allowing Terraform to perform actions)
-mongodbatlas private_key (api key for allowing Terraform to perform actions)
-mongodbatlas atlasprojectid
+- required_providers:
+  - source = "mongodb/mongodbatlas"
+  - version = "0.9.0"
+- mongodbatlas public_key (api key for allowing Terraform to perform actions)
+- mongodbatlas private_key (api key for allowing Terraform to perform actions)
+- mongodbatlas atlasprojectid
 
 ## Toggles
 #### Backup and Restore flags:
