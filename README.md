@@ -31,7 +31,7 @@ The following resources will be created:
 ```
 module "mongodb" {
   source                = "toluna-terraform/terraform-aws-mongodb"
-  version               = "~>0.0.1"
+  version               = "~>0.0.1" // Change to the required version.
   environment           = local.environment
   app_name              = local.app_name
   atlasprojectid        = var.atlasprojectid
