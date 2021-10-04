@@ -28,3 +28,8 @@ variable "restore_on_create" {
   default = true
   description = "Restore DB from dump file"
 }
+
+variable "ip_whitelist" {
+  default = []
+  description = "White listed IP list"
+}
