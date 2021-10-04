@@ -12,7 +12,7 @@ resource "random_password" "password" {
   upper    = false
 }
 
-resource "aws_ssm_parameter" "random_password" {
+resource "aws_ssm_parameter" "db_password" {
   name        = "/infra/${var.app_name}/${var.environment}-db-password"
   description = "terraform_db_password"
   type        = "SecureString"

@@ -39,7 +39,7 @@ resource "null_resource" "db_backup" {
       EOT
   }
   depends_on = [
-    mongodbatlas_database_user.main
+    mongodbatlas_database_user.main,aws_ssm_parameter.db_username,aws_ssm_parameter.db_password,aws_ssm_parameter.db_hostname
   ]
 }
 
@@ -54,6 +54,6 @@ resource "null_resource" "db_restore" {
       EOT
   }
   depends_on = [
-    mongodbatlas_database_user.main
+    mongodbatlas_database_user.main,aws_ssm_parameter.db_username,aws_ssm_parameter.db_password,aws_ssm_parameter.db_hostname
   ]
 }

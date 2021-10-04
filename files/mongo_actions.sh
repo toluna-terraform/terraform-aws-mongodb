@@ -37,6 +37,10 @@ SERVICE_NAME=$1
 DBNAME=$(aws ssm get-parameter --name "/infra/$SERVICE_NAME/$WORKSPACE-db-name" --query 'Parameter.Value' --profile $AWS_PROFILE --output text)
 DBUSER=$(aws ssm get-parameter --name "/infra/$SERVICE_NAME/$WORKSPACE-db-username" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
 DBPASSWORD=$(aws ssm get-parameter --name "/infra/$SERVICE_NAME/$WORKSPACE-db-password" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
+if [[ -z "$DBNAME"  ]] || [[ -z "$DBUSER" ]] || [[ -z "$DBPASSWORD" ]]; then
+        echo "Could not retrieve one or more parameters from SSM!!!"
+        exit 1
+fi
 ### MONGO DB BACKUP ###
 mongo_backup() {
   if aws s3 ls s3://${SERVICE_NAME}-mongodb-dumps 2>&1 | grep -q 'NoSuchBucket'
