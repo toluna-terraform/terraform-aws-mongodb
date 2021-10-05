@@ -58,6 +58,8 @@ Note that this example may create resources which can cost money (AWS AtlasMongo
 No inputs.
 
 ## Outputs
-No Outputs.
+| Name | Value |
+|------|-------|
+| cluster_connection_sting| cluster connection string( Stripped without "mongodb+srv://" ) |
 
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
