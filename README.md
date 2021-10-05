@@ -82,5 +82,7 @@ The following resources will be created:
 No inputs.
 
 ## Outputs
-No Outputs.
+| Name | Value |
+|------|-------|
+| cluster_connection_sting| cluster connection string( Stripped without "mongodb+srv://" ) |
 
