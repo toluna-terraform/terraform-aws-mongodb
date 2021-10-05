@@ -1,17 +1,17 @@
 resource "mongodbatlas_cluster" "main" {
   project_id                   = var.atlasprojectid
   name                         = "${var.app_name}-${var.environment}"
-  num_shards                   = 1
+  num_shards                   = var.atlas_num_of_shards
   replication_factor           = var.atlas_num_of_replicas
   provider_backup_enabled      = true
   auto_scaling_disk_gb_enabled = true
-  mongo_db_major_version       = "4.2"
+  mongo_db_major_version       = var.mongo_db_major_version
 
   provider_name               = "AWS"
-  disk_size_gb                = 10
-  provider_disk_iops          = 1000
-  provider_volume_type        = "STANDARD"
-  provider_instance_size_name = "M10"
+  disk_size_gb                = var.disk_size_gb
+  provider_disk_iops          = var.provider_disk_iops
+  provider_volume_type        = var.provider_volume_type
+  provider_instance_size_name = var.provider_instance_size_name
   provider_region_name        = var.atlas_region
   
 }
