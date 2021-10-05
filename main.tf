@@ -18,7 +18,7 @@ resource "mongodbatlas_cluster" "main" {
 
 resource "aws_ssm_parameter" "db_hostname" {
   name        = "/infra/${var.app_name}/${var.environment}-db-host"
-  description = "terraform_db_username"
+  description = "terraform_db_hostname"
   type        = "SecureString"
   value       = "${mongodbatlas_cluster.main.srv_address}"
   depends_on = [
@@ -39,7 +39,7 @@ resource "null_resource" "db_backup" {
       EOT
   }
   depends_on = [
-    mongodbatlas_database_user.main,aws_ssm_parameter.db_username,aws_ssm_parameter.db_password,aws_ssm_parameter.db_hostname
+    mongodbatlas_database_user.main,aws_ssm_parameter.db_username,aws_ssm_parameter.db_password,aws_ssm_parameter.db_hostname,aws_ssm_parameter.db_name
   ]
 }
 
@@ -54,6 +54,6 @@ resource "null_resource" "db_restore" {
       EOT
   }
   depends_on = [
-    mongodbatlas_database_user.main,aws_ssm_parameter.db_username,aws_ssm_parameter.db_password,aws_ssm_parameter.db_hostname
+    mongodbatlas_database_user.main,aws_ssm_parameter.db_username,aws_ssm_parameter.db_password,aws_ssm_parameter.db_hostname,aws_ssm_parameter.db_name
   ]
 }
