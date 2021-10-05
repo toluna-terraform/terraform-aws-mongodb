@@ -1,5 +1,5 @@
 # terraform-aws-mongodb
-Integrating MongoDB Atlas with AWS infra [Terraform module](https://registry.terraform.io/modules/toluna-terraform/terraform-aws-mongodb/latest)
+Integrating MongoDB Atlas with AWS infra [Terraform module](https://registry.terraform.io/modules/toluna-terraform/mongodb/aws/latest)
 
 ## Requirements
 The module requires some configurations for Atlas MongoDB
