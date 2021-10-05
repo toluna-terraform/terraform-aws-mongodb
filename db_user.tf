@@ -30,7 +30,7 @@ resource "aws_ssm_parameter" "db_name" {
   name        = "/infra/${var.app_name}/${var.environment}-db-name"
   description = "terraform_db_name"
   type        = "String"
-  value       = "${var.app_name}-${var.environment}-db"
+  value       = "${var.db_name}"
 }
 
 resource "mongodbatlas_database_user" "main" {
@@ -41,6 +41,6 @@ resource "mongodbatlas_database_user" "main" {
 
   roles {
     role_name     = "readWrite"
-    database_name = "${var.app_name}-${var.environment}-db"
+    database_name = "${var.db_name}"
   }
 }

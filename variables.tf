@@ -63,3 +63,7 @@ variable "provider_instance_size_name" {
   default = "M10"
   description = "MongoDB instance type"
 } 
+
+variable "db_name" {
+  description = "Database name to use"
+} 
