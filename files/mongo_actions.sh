@@ -13,10 +13,12 @@ EOM
 }
 [[ $# -ne 3 ]] && usage
 
-if [[ `mongodump --help` ]] || [[ `mongorestore --help` ]]; then
+if [[ `docker --help` ]]; then
   echo "Preparing to ${2}..."
+  echo "pulling mongo docker image..."
+  docker pull mongo
 else
-  echo "mongodump or mongorestore are missing please make sure you have them both installed"
+  echo "docker is missing please make sure you have it installed"
   exit 127
 fi
 
@@ -48,10 +50,13 @@ mongo_backup() {
       aws s3api create-bucket --bucket ${SERVICE_NAME}-mongodb-dumps --profile $AWS_PROFILE
       aws s3api put-public-access-block --bucket ${SERVICE_NAME}-mongodb-dumps --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true" --profile $AWS_PROFILE
     fi
-    mongodump --uri "$DBHOST/$DBNAME" -u$DBUSER -p$DBPASSWORD --gzip -o /tmp/$DBNAME
+    docker run --name mongodocker -i -d mongo
+    docker exec -i mongodocker /usr/bin/mongodump --uri "$DBHOST/$DBNAME" -u$DBUSER -p$DBPASSWORD --gzip -o /tmp/$DBNAME
+    docker cp mongodocker:/tmp/$DBNAME /tmp/$DBNAME
     tar cvf /tmp/$DBNAME.tar -C /tmp/$DBNAME/ .
     aws s3 cp /tmp/$DBNAME.tar s3://${SERVICE_NAME}-mongodb-dumps/$WORKSPACE/ --profile $AWS_PROFILE
     rm -rf /tmp/$DBNAME.tar /tmp/$DBNAME
+    docker rm -f mongodocker
   }
 
 ### MONGO DB RESTORE
@@ -64,8 +69,11 @@ mongo_restore() {
       aws s3 cp s3://${SERVICE_NAME}-mongodb-dumps/$WORKSPACE/$DBNAME.tar /tmp/  --profile $AWS_PROFILE
       mkdir -p /tmp/dump
       tar xvf /tmp/$DBNAME.tar -C /tmp/dump
-      mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --gzip /tmp/dump
+      docker run --name mongodocker -i -d mongo
+      docker cp /tmp/dump mongodocker:/tmp/dump
+      docker exec -i mongodocker /usr/bin/mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --gzip /tmp/dump
       rm -rf /tmp/$DBNAME.tar /tmp/dump
+      docker rm -f mongodocker
     fi
 }
 
