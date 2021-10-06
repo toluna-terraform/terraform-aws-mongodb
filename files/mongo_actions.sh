@@ -33,6 +33,7 @@ fi
 ### GET ENVIRONMENT DATA
 ENVIRONMET_DATA=$(jq --arg k "$WORKSPACE" '.[$k]' environments.json)
 AWS_PROFILE=$(echo $ENVIRONMET_DATA| jq -r '.aws_profile')
+ENV_TYPE=$$(echo $ENVIRONMET_DATA| jq -r '.env_type')
 
 ### GET DB CONNECTION DETAILS FROM SSM ###
 DBHOST=$3
@@ -47,7 +48,7 @@ fi
 
 ### VALIDATE DUMP EXISTS FOR RESTORE ###
 if [[ "${2}" == "mongo_restore" ]]; then
-    aws s3api head-object --bucket ${SERVICE_NAME}-mongodb-dumps --key $WORKSPACE/$DBNAME.tar --profile $AWS_PROFILE || object_not_exist=true
+    aws s3api head-object --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps --key $WORKSPACE/$DBNAME.tar --profile $AWS_PROFILE || object_not_exist=true
     if [ $object_not_exist ]; then
         echo "Dump file not found not performing restore"
         exit 0
@@ -66,25 +67,25 @@ fi
 
 ### MONGO DB BACKUP ###
 mongo_backup() {
-    aws s3api head-bucket --bucket ${SERVICE_NAME}-mongodb-dumps --profile $AWS_PROFILE || bucket_not_exist=true
+    aws s3api head-bucket --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps --profile $AWS_PROFILE || bucket_not_exist=true
     if [ $bucket_not_exist ]; then
-      echo "Bucket not found, Creating new bucket ${SERVICE_NAME}-mongodb-dumps..."
-      aws s3api create-bucket --bucket ${SERVICE_NAME}-mongodb-dumps --profile $AWS_PROFILE --no-cli-pager
-      aws s3api put-bucket-versioning --bucket ${SERVICE_NAME}-mongodb-dumps --versioning-configuration Status=Enabled --profile $AWS_PROFILE
-      aws s3api put-public-access-block --bucket ${SERVICE_NAME}-mongodb-dumps --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true" --profile $AWS_PROFILE
+      echo "Bucket not found, Creating new bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps..."
+      aws s3api create-bucket --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps --profile $AWS_PROFILE --no-cli-pager
+      aws s3api put-bucket-versioning --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps --versioning-configuration Status=Enabled --profile $AWS_PROFILE
+      aws s3api put-public-access-block --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true" --profile $AWS_PROFILE
     fi
     [ ! "$(docker ps -a | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
     docker exec -i mongodocker /usr/bin/mongodump --uri "$DBHOST/$DBNAME" -u$DBUSER -p$DBPASSWORD --gzip -o /tmp/$DBNAME
     docker cp mongodocker:/tmp/$DBNAME /tmp/$DBNAME
     tar cvf /tmp/$DBNAME.tar -C /tmp/$DBNAME/ .
-    aws s3 cp /tmp/$DBNAME.tar s3://${SERVICE_NAME}-mongodb-dumps/$WORKSPACE/ --profile $AWS_PROFILE
+    aws s3 cp /tmp/$DBNAME.tar s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/ --profile $AWS_PROFILE
     rm -rf /tmp/$DBNAME.tar /tmp/$DBNAME
     docker rm -f mongodocker
   }
 
 ### MONGO DB RESTORE
 mongo_restore() {
-      aws s3 cp s3://${SERVICE_NAME}-mongodb-dumps/$WORKSPACE/$DBNAME.tar /tmp/  --profile $AWS_PROFILE
+      aws s3 cp s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/$DBNAME.tar /tmp/  --profile $AWS_PROFILE
       mkdir -p /tmp/dump
       tar xvf /tmp/$DBNAME.tar -C /tmp/dump
       [ ! "$(docker ps -a | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash

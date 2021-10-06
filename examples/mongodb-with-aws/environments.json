@@ -1,3 +1,6 @@
 {
-    "test-data": {}
+    "test-data": {
+        "env_type" : "non-prod",
+        "aws_profile" : "my-test-aws-profile"
+    }
 }
