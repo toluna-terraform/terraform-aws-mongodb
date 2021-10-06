@@ -33,7 +33,7 @@ fi
 ### GET ENVIRONMENT DATA
 ENVIRONMET_DATA=$(jq --arg k "$WORKSPACE" '.[$k]' environments.json)
 AWS_PROFILE=$(echo $ENVIRONMET_DATA| jq -r '.aws_profile')
-ENV_TYPE=$$(echo $ENVIRONMET_DATA| jq -r '.env_type')
+ENV_TYPE=$(echo $ENVIRONMET_DATA| jq -r '.env_type')
 
 ### GET DB CONNECTION DETAILS FROM SSM ###
 DBHOST=$3
