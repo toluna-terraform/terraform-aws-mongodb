@@ -13,14 +13,15 @@ resource "mongodbatlas_cluster" "main" {
   provider_volume_type        = var.provider_volume_type
   provider_instance_size_name = var.provider_instance_size_name
   provider_region_name        = var.atlas_region
-  
+
 }
 
 resource "aws_ssm_parameter" "db_hostname" {
   name        = "/infra/${var.app_name}/${var.environment}-db-host"
-  description = "terraform_db_username"
+  description = "terraform_db_hostname"
   type        = "SecureString"
   value       = "${mongodbatlas_cluster.main.srv_address}"
+  overwrite   = true
   depends_on = [
     mongodbatlas_cluster.main
   ]
@@ -32,14 +33,14 @@ resource "null_resource" "db_backup" {
     address = "${mongodbatlas_cluster.main.srv_address}"
   }
   provisioner "local-exec" {
-    when    = destroy
+    when       = destroy
     on_failure = fail
-      command = <<-EOT
+    command    = <<-EOT
         ${path.module}/files/mongo_actions.sh chorus mongo_backup ${self.triggers.address}
       EOT
   }
   depends_on = [
-    mongodbatlas_database_user.main,aws_ssm_parameter.db_username,aws_ssm_parameter.db_password,aws_ssm_parameter.db_hostname
+    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, aws_ssm_parameter.db_name
   ]
 }
 
@@ -49,11 +50,11 @@ resource "null_resource" "db_restore" {
     address = "${mongodbatlas_cluster.main.srv_address}"
   }
   provisioner "local-exec" {
-      command = <<-EOT
+    command = <<-EOT
         ${path.module}/files/mongo_actions.sh chorus mongo_restore ${self.triggers.address}
       EOT
   }
   depends_on = [
-    mongodbatlas_database_user.main,aws_ssm_parameter.db_username,aws_ssm_parameter.db_password,aws_ssm_parameter.db_hostname
+    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, aws_ssm_parameter.db_name
   ]
 }

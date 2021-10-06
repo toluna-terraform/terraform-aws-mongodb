@@ -1,15 +1,15 @@
 terraform {
   required_providers {
     mongodbatlas = {
-      source = "mongodb/mongodbatlas"
+      source  = "mongodb/mongodbatlas"
       version = "0.9.0"
     }
   }
 }
 resource "random_password" "password" {
-  length   = 14
-  special  = false
-  upper    = false
+  length  = 14
+  special = false
+  upper   = false
 }
 
 resource "aws_ssm_parameter" "db_password" {
@@ -17,6 +17,7 @@ resource "aws_ssm_parameter" "db_password" {
   description = "terraform_db_password"
   type        = "SecureString"
   value       = random_password.password.result
+  overwrite   = true
 }
 
 resource "aws_ssm_parameter" "db_username" {
@@ -24,13 +25,15 @@ resource "aws_ssm_parameter" "db_username" {
   description = "terraform_db_username"
   type        = "SecureString"
   value       = "${var.app_name}-${var.environment}-dbuser"
+  overwrite   = true
 }
 
 resource "aws_ssm_parameter" "db_name" {
   name        = "/infra/${var.app_name}/${var.environment}-db-name"
   description = "terraform_db_name"
   type        = "String"
-  value       = "${var.app_name}-${var.environment}-db"
+  value       = "${var.db_name}"
+  overwrite   = true
 }
 
 resource "mongodbatlas_database_user" "main" {
@@ -41,6 +44,6 @@ resource "mongodbatlas_database_user" "main" {
 
   roles {
     role_name     = "readWrite"
-    database_name = "${var.app_name}-${var.environment}-db"
+    database_name = "${var.db_name}"
   }
 }

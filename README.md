@@ -32,6 +32,11 @@ module "mongodb" {
   provider_instance_size_name = "M10"
 }
 ```
+To run the mongorestore/mongodump script mnually (mongo_actions.sh): 
+- cd to the path containing your environment.json (see examples)
+- ../../../toluna-terraform/terraform-aws-mongodb/files/mongo_actions.sh [service_name] [action] [uri]
+  - To backup run : ../../../toluna-terraform/terraform-aws-mongodb/files/mongo_actions.sh myService mongo_backup mongodb+srv://myService.test.mongodb.net
+  - To restore run : ../../../toluna-terraform/terraform-aws-mongodb/files/mongo_actions.sh myService mongo_restore mongodb+srv://myService.test.mongodb.net
 
 ## Toggles
 #### Backup and Restore flags:
