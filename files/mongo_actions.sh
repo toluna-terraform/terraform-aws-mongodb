@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+set -o pipefail
 
 usage() {
   cat <<EOM
@@ -13,11 +15,12 @@ EOM
 }
 [[ $# -ne 3 ]] && usage
 
-if [[ `mongodump --help` ]] || [[ `mongorestore --help` ]]; then
-  echo "Preparing to ${2}..."
+### VALIDATE MONGODB URI FORMAT ###
+if [[ $3 =~ ^mongodb\+srv\:\/\/.*$ ]]; then
+    echo "Validating mongoDB uri"
 else
-  echo "mongodump or mongorestore are missing please make sure you have them both installed"
-  exit 127
+    echo "Please use a valid mongoDB uri mongodb+srv://myMongo-server"
+    exit 1
 fi
 
 ### GET TERRAFORM WORKSPACE ###
@@ -41,32 +44,54 @@ if [[ -z "$DBNAME"  ]] || [[ -z "$DBUSER" ]] || [[ -z "$DBPASSWORD" ]]; then
         echo "Could not retrieve one or more parameters from SSM!!!"
         exit 1
 fi
+
+### VALIDATE DUMP EXISTS FOR RESTORE ###
+if [[ "${2}" == "mongo_restore" ]]; then
+    aws s3api head-object --bucket ${SERVICE_NAME}-mongodb-dumps --key $WORKSPACE/$DBNAME.tar --profile $AWS_PROFILE || object_not_exist=true
+    if [ $object_not_exist ]; then
+        echo "Dump file not found not performing restore"
+        exit 0
+    fi
+fi
+
+### VALIDATE DOCKER IS INTALLED AND RUNNING ###
+if [[ `docker ps` ]]; then
+  echo "Preparing to ${2}..."
+  echo "pulling mongo docker image..."
+  docker pull mongo
+else
+  echo "docker is missing or docker daemon is not running !!!"
+  exit 127
+fi
+
 ### MONGO DB BACKUP ###
 mongo_backup() {
-  if aws s3 ls s3://${SERVICE_NAME}-mongodb-dumps 2>&1 | grep -q 'NoSuchBucket'
-    then
-      aws s3api create-bucket --bucket ${SERVICE_NAME}-mongodb-dumps --profile $AWS_PROFILE
+    aws s3api head-bucket --bucket ${SERVICE_NAME}-mongodb-dumps --profile $AWS_PROFILE || bucket_not_exist=true
+    if [ $bucket_not_exist ]; then
+      echo "Bucket not found, Creating new bucket ${SERVICE_NAME}-mongodb-dumps..."
+      aws s3api create-bucket --bucket ${SERVICE_NAME}-mongodb-dumps --profile $AWS_PROFILE --no-cli-pager
+      aws s3api put-bucket-versioning --bucket ${SERVICE_NAME}-mongodb-dumps --versioning-configuration Status=Enabled --profile $AWS_PROFILE
       aws s3api put-public-access-block --bucket ${SERVICE_NAME}-mongodb-dumps --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true" --profile $AWS_PROFILE
     fi
-    mongodump --uri "$DBHOST/$DBNAME" -u$DBUSER -p$DBPASSWORD --gzip -o /tmp/$DBNAME
+    [ ! "$(docker ps -a | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
+    docker exec -i mongodocker /usr/bin/mongodump --uri "$DBHOST/$DBNAME" -u$DBUSER -p$DBPASSWORD --gzip -o /tmp/$DBNAME
+    docker cp mongodocker:/tmp/$DBNAME /tmp/$DBNAME
     tar cvf /tmp/$DBNAME.tar -C /tmp/$DBNAME/ .
     aws s3 cp /tmp/$DBNAME.tar s3://${SERVICE_NAME}-mongodb-dumps/$WORKSPACE/ --profile $AWS_PROFILE
     rm -rf /tmp/$DBNAME.tar /tmp/$DBNAME
+    docker rm -f mongodocker
   }
 
 ### MONGO DB RESTORE
 mongo_restore() {
-    if aws s3api head-object --bucket ${SERVICE_NAME}-mongodb-dumps --key $WORKSPACE/$DBNAME.tar --profile $AWS_PROFILE  2>&1 | grep -q 'Not Found'
-      then
-        echo "Dump file not found not performing restore"
-        exit 0
-    else
       aws s3 cp s3://${SERVICE_NAME}-mongodb-dumps/$WORKSPACE/$DBNAME.tar /tmp/  --profile $AWS_PROFILE
       mkdir -p /tmp/dump
       tar xvf /tmp/$DBNAME.tar -C /tmp/dump
-      mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --gzip /tmp/dump
+      [ ! "$(docker ps -a | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
+      docker cp /tmp/dump mongodocker:/tmp/dump
+      docker exec -i mongodocker /usr/bin/mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --gzip /tmp/dump
       rm -rf /tmp/$DBNAME.tar /tmp/dump
-    fi
+      docker rm -f mongodocker
 }
 
 $2
