@@ -7,16 +7,17 @@ unset ACTION_TYPE
 unset WORKSPACE
 unset AWS_PROFILE
 unset DBHOST
+unset DBNAME
 unset INIT_DB_WORKSPACE
 
 usage() {
   cat <<EOM
     Usage:
-    mongo_actions.sh -service_name <SERVICE_NAME> -action <mongo_backup/mongo_restore> -workspace <Terraform workspace> -profile <AWS_PROFILE> -dbhost <Mongo DB URI> -source_db <source workspace to copy DB from on restore(optional)>
+    mongo_actions.sh -s|--service_name <SERVICE_NAME> -a|--action <mongo_backup/mongo_restore> -w|--workspace <Terraform workspace> -p|--profile <AWS_PROFILE> -dbh|--dbhost <Mongo DB URI> -dbn|--dbname <DB NAME> -dbs|--source_db <source workspace to copy DB from on restore(optional)>
     I.E. for backup 
-    mongo_actions.sh -service_name myService -action mongo_backup -workspace my-data -profile my-aws-profile -dbhost mongodb+srv://my-mongodb-connection-string
+    mongo_actions.sh --service_name myService --action mongo_backup --workspace my-data --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string --dbname myDB
     I.E. for restore
-    mongo_actions.sh -service_name myService -action mongo_restore -workspace my-data -profile my-aws-profile -dbhost mongodb+srv://my-mongodb-connection-string -source_db test-data
+    mongo_actions.sh --service_name myService --action mongo_restore --workspace my-data --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string --dbname myDB --source_db test-data
 EOM
     exit 1
 }
@@ -49,6 +50,11 @@ while [[ $# -gt 0 ]]; do
       shift # past argument
       shift # past value
       ;;
+    -dbn|--dbname)
+      DBNAME="$2"
+      shift # past argument
+      shift # past value
+      ;;
     -sdb|--source_db)
         INIT_DB_WORKSPACE="$2"
         shift # past argument
@@ -60,16 +66,17 @@ while [[ $# -gt 0 ]]; do
         shift # past value
       ;;
     *)    # unknown option
-      echo "Error in command line parsing: unknowen parameter ${*}" >&2
+      echo "Error in command line parsing: unknown parameter ${*}" >&2
       exit 1
   esac
 done
 
-: ${SERVICE_NAME:?Missing -service_name type -h for help}
-: ${ACTION_TYPE:?Missing -action type -h for help}
-: ${WORKSPACE:?Missing -workspace type -h for help}
-: ${AWS_PROFILE:?Missing -profile type -h for help}
-: ${DBHOST:?Missing -dbhost type -h for help}
+: ${SERVICE_NAME:?Missing -s|--service_name type -h for help}
+: ${ACTION_TYPE:?Missing -a|--action type -h for help}
+: ${WORKSPACE:?Missing -w|--workspace type -h for help}
+: ${AWS_PROFILE:?Missing -p|--profile type -h for help}
+: ${DBHOST:?Missing -dbh|--dbhost type -h for help}
+: ${DBNAME:?Missing -dbn|--dbname type -h for help}
 
 ### VALIDATE MONGODB URI FORMAT ###
 if [[ "$DBHOST" =~ ^mongodb\+srv\:\/\/.*$ ]]; then
@@ -79,8 +86,33 @@ else
     exit 1
 fi
 
+### VALIDATE DUMP EXISTS FOR RESTORE ###
+if [[ "${ACTION_TYPE}" == "mongo_restore" ]]; then
+    aws s3api head-object --bucket ${SERVICE_NAME}-mongodb-dumps --key $WORKSPACE/$DBNAME.tar --profile $AWS_PROFILE || object_not_exist=true
+    if [[ $object_not_exist && -z "${INIT_DB_WORKSPACE}" ]]; then
+        echo "Dump file not found not performing restore"
+        exit 0
+    elif [[ $object_not_exist && -n "${INIT_DB_WORKSPACE}" ]]
+    then
+        ACTION_TYPE="mongo_clone"
+    else
+        echo "Starting Restore..." 
+    fi
+fi
+
+if [[ "${ACTION_TYPE}" == "mongo_clone" ]]; then
+    SDBNAME=$(aws ssm get-parameter --name "/infra/$SERVICE_NAME/$INIT_DB_WORKSPACE-db-name" --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
+    SDBHOST=$(aws ssm get-parameter --name "/infra/$SERVICE_NAME/$INIT_DB_WORKSPACE-db-host" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
+    SDBUSER=$(aws ssm get-parameter --name "/infra/$SERVICE_NAME/$INIT_DB_WORKSPACE-db-username" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
+    SDBPASSWORD=$(aws ssm get-parameter --name "/infra/$SERVICE_NAME/$INIT_DB_WORKSPACE-db-password" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
+    if [[ -z "$SDBUSER" ]] || [[ -z "$SDBPASSWORD" ]] || [[ -z "$SDBHOST" ]]; then
+        echo "Could not retrieve one or more parameters from SSM!!!"
+        exit 1
+    fi
+fi
+
 ### GET DB CONNECTION DETAILS FROM SSM ###
-DBNAME=$(aws ssm get-parameter --name "/infra/$SERVICE_NAME/$WORKSPACE-db-name" --query 'Parameter.Value' --profile $AWS_PROFILE --output text)
+DBNAME=$(aws ssm get-parameter --name "/infra/$SERVICE_NAME/$WORKSPACE-db-name" --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
 DBUSER=$(aws ssm get-parameter --name "/infra/$SERVICE_NAME/$WORKSPACE-db-username" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
 DBPASSWORD=$(aws ssm get-parameter --name "/infra/$SERVICE_NAME/$WORKSPACE-db-password" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
 if [[ -z "$DBNAME"  ]] || [[ -z "$DBUSER" ]] || [[ -z "$DBPASSWORD" ]]; then
@@ -88,18 +120,9 @@ if [[ -z "$DBNAME"  ]] || [[ -z "$DBUSER" ]] || [[ -z "$DBPASSWORD" ]]; then
         exit 1
 fi
 
-### VALIDATE DUMP EXISTS FOR RESTORE ###
-if [[ "${2}" == "mongo_restore" ]]; then
-    aws s3api head-object --bucket ${SERVICE_NAME}-mongodb-dumps --key $WORKSPACE/$DBNAME.tar --profile $AWS_PROFILE || object_not_exist=true
-    if [ $object_not_exist ]; then
-        echo "Dump file not found not performing restore"
-        exit 0
-    fi
-fi
-
 ### VALIDATE DOCKER IS INTALLED AND RUNNING ###
 if [[ `docker ps` ]]; then
-  echo "Preparing to ${2}..."
+  echo "Preparing to ${ACTION_TYPE}..."
   echo "pulling mongo docker image..."
   docker pull mongo
 else
@@ -124,6 +147,13 @@ mongo_backup() {
     rm -rf /tmp/$DBNAME.tar /tmp/$DBNAME
     docker rm -f mongodocker
   }
+
+mongo_clone() {
+      echo "Copying init db..."
+      [ ! "$(docker ps -a | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
+      docker exec -i mongodocker mongodump --uri "$SDBHOST/$SDBNAME" -u$SDBUSER -p$SDBPASSWORD --gzip --archive | mongorestore --uri "$DBHOST/$DBNAME" -u$DBUSER -p$DBPASSWORD --nsFrom="$SDBNAME.*" --nsTo="$DBNAME.*" --gzip --archive
+      docker rm -f mongodocker
+}
 
 ### MONGO DB RESTORE
 mongo_restore() {
