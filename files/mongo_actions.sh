@@ -161,7 +161,6 @@ mongo_backup() {
 mongo_clone() {
       echo "Copying init db..."
       [ ! "$(docker ps -a | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
-      echo """docker exec -i mongodocker mongodump --uri "$SDBHOST/$SDBNAME" -u$SDBUSER -p$SDBPASSWORD --gzip --archive | mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --nsFrom="$SDBNAME.*" --nsTo="$DBNAME.*" --gzip --archive"""
       docker exec -i mongodocker mongodump --uri "$SDBHOST/$SDBNAME" -u$SDBUSER -p$SDBPASSWORD --gzip --archive | mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --nsFrom="$SDBNAME.*" --nsTo="$DBNAME.*" --gzip --archive
       docker rm -f mongodocker
 }
