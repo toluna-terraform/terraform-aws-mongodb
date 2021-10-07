@@ -2,41 +2,84 @@
 set -e
 set -o pipefail
 
+unset SERVICE_NAME
+unset ACTION_TYPE
+unset WORKSPACE
+unset AWS_PROFILE
+unset DBHOST
+unset INIT_DB_WORKSPACE
+
 usage() {
   cat <<EOM
     Usage:
-    mongo_actions.sh <SERVICE_NAME> <ACTION> <DBHOST>
+    mongo_actions.sh -service_name <SERVICE_NAME> -action <mongo_backup/mongo_restore> -workspace <Terraform workspace> -profile <AWS_PROFILE> -dbhost <Mongo DB URI> -source_db <source workspace to copy DB from on restore(optional)>
     I.E. for backup 
-    mongo_actions.sh myService mongo_backup mongodb+srv://my-mongodb-connection-string
+    mongo_actions.sh -service_name myService -action mongo_backup -workspace my-data -profile my-aws-profile -dbhost mongodb+srv://my-mongodb-connection-string
     I.E. for restore
-    mongo_actions.sh myService mongo_restore mongodb+srv://my-mongodb-connection-string
+    mongo_actions.sh -service_name myService -action mongo_restore -workspace my-data -profile my-aws-profile -dbhost mongodb+srv://my-mongodb-connection-string -source_db test-data
 EOM
     exit 1
 }
-[[ $# -ne 3 ]] && usage
+
+while [[ $# -gt 0 ]]; do
+  key="$1"
+  case $key in
+    -s|--service_name)
+      SERVICE_NAME="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    -a|--action)
+      ACTION_TYPE="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    -w|--workspace)
+      WORKSPACE="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    -p|--profile)
+      AWS_PROFILE="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    -dbh|--dbhost)
+      DBHOST="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    -sdb|--source_db)
+        INIT_DB_WORKSPACE="$2"
+        shift # past argument
+        shift # past value
+      ;;
+    -h|--help)
+        usage
+        shift # past argument
+        shift # past value
+      ;;
+    *)    # unknown option
+      echo "Error in command line parsing: unknowen parameter ${*}" >&2
+      exit 1
+  esac
+done
+
+: ${SERVICE_NAME:?Missing -service_name type -h for help}
+: ${ACTION_TYPE:?Missing -action type -h for help}
+: ${WORKSPACE:?Missing -workspace type -h for help}
+: ${AWS_PROFILE:?Missing -profile type -h for help}
+: ${DBHOST:?Missing -dbhost type -h for help}
 
 ### VALIDATE MONGODB URI FORMAT ###
-if [[ $3 =~ ^mongodb\+srv\:\/\/.*$ ]]; then
+if [[ "$DBHOST" =~ ^mongodb\+srv\:\/\/.*$ ]]; then
     echo "Validating mongoDB uri"
 else
     echo "Please use a valid mongoDB uri mongodb+srv://myMongo-server"
     exit 1
 fi
 
-### GET TERRAFORM WORKSPACE ###
-[[ "$PWD" == ~ ]] && return
-    # check if in terraform dir
-    if [[ -d .terraform && -r .terraform/environment  ]]; then
-      WORKSPACE=$(cat .terraform/environment) || return
-    fi
-
-### GET ENVIRONMENT DATA
-ENVIRONMET_DATA=$(jq --arg k "$WORKSPACE" '.[$k]' environments.json)
-AWS_PROFILE=$(echo $ENVIRONMET_DATA| jq -r '.aws_profile')
-
 ### GET DB CONNECTION DETAILS FROM SSM ###
-DBHOST=$3
-SERVICE_NAME=$1
 DBNAME=$(aws ssm get-parameter --name "/infra/$SERVICE_NAME/$WORKSPACE-db-name" --query 'Parameter.Value' --profile $AWS_PROFILE --output text)
 DBUSER=$(aws ssm get-parameter --name "/infra/$SERVICE_NAME/$WORKSPACE-db-username" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
 DBPASSWORD=$(aws ssm get-parameter --name "/infra/$SERVICE_NAME/$WORKSPACE-db-password" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
@@ -94,4 +137,4 @@ mongo_restore() {
       docker rm -f mongodocker
 }
 
-$2
+$ACTION_TYPE
