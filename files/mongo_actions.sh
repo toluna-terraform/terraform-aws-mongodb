@@ -57,7 +57,13 @@ while [[ $# -gt 0 ]]; do
       shift # past value
       ;;
     -sdb|--source_db)
-        INIT_DB_WORKSPACE="$2"
+        if [[ "$2" == "NULL" ]];
+        then 
+            unset INIT_DB_WORKSPACE
+        else 
+            INIT_DB_WORKSPACE="$2"
+            ACTION_TYPE="mongo_clone"
+        fi
         shift # past argument
         shift # past value
       ;;
@@ -87,17 +93,18 @@ else
     exit 1
 fi
 
-
 ### GET SOURCE DB CONNECTION DETAILS FROM SSM ###
 if [[ "${ACTION_TYPE}" == "mongo_clone" ]]; then
     SDBNAME=$(aws ssm get-parameter --name "/infra/$INIT_DB_WORKSPACE-db-name" --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
     SDBHOST=$(aws ssm get-parameter --name "/infra/$INIT_DB_WORKSPACE-db-host" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
     SDBUSER=$(aws ssm get-parameter --name "/infra/$INIT_DB_WORKSPACE-db-username" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
     SDBPASSWORD=$(aws ssm get-parameter --name "/infra/$INIT_DB_WORKSPACE-db-password" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
+    
     if [[ -z "$SDBUSER" ]] || [[ -z "$SDBPASSWORD" ]] || [[ -z "$SDBHOST" ]]; then
         echo "Could not retrieve one or more parameters from SSM!!!"
         exit 1
     fi
+    
 fi
 
 ### GET TARGET DB CONNECTION DETAILS FROM SSM ###
@@ -154,7 +161,7 @@ mongo_backup() {
 mongo_clone() {
       echo "Copying init db..."
       [ ! "$(docker ps -a | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
-      suffix='.*'
+      echo """docker exec -i mongodocker mongodump --uri "$SDBHOST/$SDBNAME" -u$SDBUSER -p$SDBPASSWORD --gzip --archive | mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --nsFrom="$SDBNAME.*" --nsTo="$DBNAME.*" --gzip --archive"""
       docker exec -i mongodocker mongodump --uri "$SDBHOST/$SDBNAME" -u$SDBUSER -p$SDBPASSWORD --gzip --archive | mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --nsFrom="$SDBNAME.*" --nsTo="$DBNAME.*" --gzip --archive
       docker rm -f mongodocker
 }

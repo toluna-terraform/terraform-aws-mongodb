@@ -1,0 +1,1 @@
+-s ${SERVICE_NAME} -w ${WORKSPACE} -e ${ENV_TYPE} -p ${AWS_PROFILE} -dbh ${DBHOST}

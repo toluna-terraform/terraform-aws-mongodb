@@ -67,3 +67,16 @@ variable "provider_instance_size_name" {
 variable "db_name" {
   description = "Database name to use"
 } 
+
+variable "aws_profile" {
+  description = "AWS profile"
+} 
+
+variable "env_type" {
+  description = "Environment type prod/non-prod"
+} 
+
+variable "init_db" {
+  default = "NULL"
+  description = "Source envirnment to restore db from"
+} 

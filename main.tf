@@ -17,7 +17,7 @@ resource "mongodbatlas_cluster" "main" {
 }
 
 resource "aws_ssm_parameter" "db_hostname" {
-  name        = "/infra/${var.app_name}/${var.environment}-db-host"
+  name        = "/infra/${var.environment}-db-host"
   description = "terraform_db_hostname"
   type        = "SecureString"
   value       = "${mongodbatlas_cluster.main.srv_address}"
@@ -27,34 +27,37 @@ resource "aws_ssm_parameter" "db_hostname" {
   ]
 }
 
+
 resource "null_resource" "db_backup" {
   count = var.backup_on_destroy ? 1 : 0
   triggers = {
-    address = "${mongodbatlas_cluster.main.srv_address}"
+    address = "${mongodbatlas_cluster.main.srv_address}",
+    cmd = data.template_file.mongo_backup.rendered
   }
   provisioner "local-exec" {
     when       = destroy
     on_failure = fail
     command    = <<-EOT
-        ${path.module}/files/mongo_actions.sh chorus mongo_backup ${self.triggers.address}
+        ${path.module}/files/mongo_actions.sh -a mongo_backup ${self.triggers.cmd}
       EOT
   }
   depends_on = [
-    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, aws_ssm_parameter.db_name
+    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, aws_ssm_parameter.db_name,data.template_file.mongo_backup
   ]
 }
 
 resource "null_resource" "db_restore" {
   count = var.restore_on_create ? 1 : 0
   triggers = {
-    address = "${mongodbatlas_cluster.main.srv_address}"
+    address = "${mongodbatlas_cluster.main.srv_address}",
+    cmd = data.template_file.mongo_restore.rendered
   }
   provisioner "local-exec" {
     command = <<-EOT
-        ${path.module}/files/mongo_actions.sh chorus mongo_restore ${self.triggers.address}
+        ${path.module}/files/mongo_actions.sh -a mongo_restore ${self.triggers.cmd}
       EOT
   }
   depends_on = [
-    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, aws_ssm_parameter.db_name
+    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, aws_ssm_parameter.db_name,data.template_file.mongo_restore
   ]
 }

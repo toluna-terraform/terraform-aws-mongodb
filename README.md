@@ -16,14 +16,18 @@ The module requires some configurations for Atlas MongoDB
 module "mongodb" {
   source                = "toluna-terraform/terraform-aws-mongodb"
   version               = "~>0.0.1" // Change to the required version.
-  environment           = local.environment
-  app_name              = local.app_name
-  atlasprojectid        = var.atlasprojectid
-  atlas_region          = var.atlas_region
-  atlas_num_of_replicas = local.env_vars.atlas_num_of_replicas
-  backup_on_destroy     = true
-  restore_on_create     = true
-  ip_whitelist          = local.ip_whitelist
+  environment                 = local.environment
+  app_name                    = local.app_name
+  aws_profile                 = local.aws_profile
+  env_type                    = local.env_type
+  atlasprojectid              = var.atlasprojectid
+  atlas_region                = var.atlas_region
+  atlas_num_of_replicas       = local.env_vars.atlas_num_of_replicas
+  backup_on_destroy           = true
+  restore_on_create           = true
+  db_name                     = local.env_vars.db_name
+  init_db                     = local.env_vars.init_db
+  ip_whitelist                = local.ip_whitelist
   atlas_num_of_shards         = 1
   mongo_db_major_version      = "4.2"
   disk_size_gb                = 10
@@ -34,9 +38,11 @@ module "mongodb" {
 ```
 To run the mongorestore/mongodump script mnually (mongo_actions.sh): 
 - cd to the path containing your environment.json (see examples)
-- ../../../toluna-terraform/terraform-aws-mongodb/files/mongo_actions.sh [service_name] [action] [uri]
-  - To backup run : ../../../toluna-terraform/terraform-aws-mongodb/files/mongo_actions.sh myService mongo_backup mongodb+srv://myService.test.mongodb.net
-  - To restore run : ../../../toluna-terraform/terraform-aws-mongodb/files/mongo_actions.sh myService mongo_restore mongodb+srv://myService.test.mongodb.net
+- mongo_actions.sh -s|--service_name <SERVICE_NAME> -a|--action <mongo_backup/mongo_restore> -w|--workspace <Terraform workspace> -e|--env_type <prod/non-prod> -p|--profile <AWS_PROFILE> -dbh|--dbhost <Mongo DB URI> -dbs|--source_db <source workspace to copy DB from on restore(optional)>
+    - I.E. for backup 
+    - mongo_actions.sh --service_name myService --action mongo_backup --workspace my-data --env_type non-prod --profile - my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string
+    - I.E. for restore
+    - mongo_actions.sh --service_name myService --action mongo_restore --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string --source_db test-data
 
 ## Toggles
 #### Backup and Restore flags:
