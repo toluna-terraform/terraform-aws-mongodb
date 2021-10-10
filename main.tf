@@ -17,7 +17,7 @@ resource "mongodbatlas_cluster" "main" {
 }
 
 resource "aws_ssm_parameter" "db_hostname" {
-  name        = "/infra/${var.environment}-db-host"
+  name        = "/infra/${var.environment}/db-host"
   description = "terraform_db_hostname"
   type        = "SecureString"
   value       = "${mongodbatlas_cluster.main.srv_address}"
@@ -38,7 +38,7 @@ resource "null_resource" "db_backup" {
     when       = destroy
     on_failure = fail
     command    = <<-EOT
-        ${path.module}/files/mongo_actions.sh -a mongo_backup ${self.triggers.cmd}
+        ${self.triggers.cmd}
       EOT
   }
   depends_on = [
@@ -54,7 +54,7 @@ resource "null_resource" "db_restore" {
   }
   provisioner "local-exec" {
     command = <<-EOT
-        ${path.module}/files/mongo_actions.sh -a mongo_restore ${self.triggers.cmd}
+        ${self.triggers.cmd}
       EOT
   }
   depends_on = [

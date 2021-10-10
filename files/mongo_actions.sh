@@ -95,10 +95,10 @@ fi
 
 ### GET SOURCE DB CONNECTION DETAILS FROM SSM ###
 if [[ "${ACTION_TYPE}" == "mongo_clone" ]]; then
-    SDBNAME=$(aws ssm get-parameter --name "/infra/$INIT_DB_WORKSPACE-db-name" --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
-    SDBHOST=$(aws ssm get-parameter --name "/infra/$INIT_DB_WORKSPACE-db-host" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
-    SDBUSER=$(aws ssm get-parameter --name "/infra/$INIT_DB_WORKSPACE-db-username" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
-    SDBPASSWORD=$(aws ssm get-parameter --name "/infra/$INIT_DB_WORKSPACE-db-password" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
+    SDBNAME=$(aws ssm get-parameter --name "/infra/$INIT_DB_WORKSPACE/db-name" --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
+    SDBHOST=$(aws ssm get-parameter --name "/infra/$INIT_DB_WORKSPACE/db-host" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
+    SDBUSER=$(aws ssm get-parameter --name "/infra/$INIT_DB_WORKSPACE/db-username" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
+    SDBPASSWORD=$(aws ssm get-parameter --name "/infra/$INIT_DB_WORKSPACE/db-password" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
     
     if [[ -z "$SDBUSER" ]] || [[ -z "$SDBPASSWORD" ]] || [[ -z "$SDBHOST" ]]; then
         echo "Could not retrieve one or more parameters from SSM!!!"
@@ -108,9 +108,9 @@ if [[ "${ACTION_TYPE}" == "mongo_clone" ]]; then
 fi
 
 ### GET TARGET DB CONNECTION DETAILS FROM SSM ###
-DBNAME=$(aws ssm get-parameter --name "/infra/$WORKSPACE-db-name" --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
-DBUSER=$(aws ssm get-parameter --name "/infra/$WORKSPACE-db-username" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
-DBPASSWORD=$(aws ssm get-parameter --name "/infra/$WORKSPACE-db-password" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
+DBNAME=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-name" --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
+DBUSER=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-username" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
+DBPASSWORD=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-password" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
 if [[ -z "$DBNAME"  ]] || [[ -z "$DBUSER" ]] || [[ -z "$DBPASSWORD" ]]; then
         echo "Could not retrieve one or more parameters from SSM!!!"
         exit 1

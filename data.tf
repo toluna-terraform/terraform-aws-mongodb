@@ -1,7 +1,7 @@
 data "template_file" "mongo_backup" {
   template = "${file("${path.module}/files/mongo_backup.tpl")}"
   vars = {
-    PATH="${path.module}"
+    PATH_MODULE="${path.module}"
     SERVICE_NAME="${var.app_name}"
     WORKSPACE="${var.environment}"
     ENV_TYPE="${var.env_type}"
@@ -17,7 +17,7 @@ data "template_file" "mongo_backup" {
 data "template_file" "mongo_restore" {
   template = "${file("${path.module}/files/mongo_restore.tpl")}"
   vars = {
-    PATH="${path.module}"
+    PATH_MODULE="${path.module}"
     SERVICE_NAME="${var.app_name}"
     WORKSPACE="${var.environment}"
     ENV_TYPE="${var.env_type}"
