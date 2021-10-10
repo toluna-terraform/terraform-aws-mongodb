@@ -29,3 +29,12 @@ data "template_file" "mongo_restore" {
     mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, aws_ssm_parameter.db_name
   ]
 }
+
+data "external" "get_dump_data" {
+  program = ["bash", "${path.module}/files/get_dump_data.sh"]
+  query = {
+    bucket = "${var.app_name}-${var.env_type}-mongodb-dumps"
+    key = "${var.environment}/devops.tar"
+    profile = "${var.aws_profile}"
+  }
+}

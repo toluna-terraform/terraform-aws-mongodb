@@ -149,7 +149,7 @@ mongo_backup() {
       aws s3api put-bucket-versioning --bucket ${SERVICE_NAME}-mongodb-dumps --versioning-configuration Status=Enabled --profile $AWS_PROFILE
       aws s3api put-public-access-block --bucket ${SERVICE_NAME}-mongodb-dumps --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true" --profile $AWS_PROFILE
     fi
-    [ ! "$(docker ps -a | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
+    [ ! "$(docker ps | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
     docker exec -i mongodocker /usr/bin/mongodump --uri "$DBHOST/$DBNAME" -u$DBUSER -p$DBPASSWORD --gzip -o /tmp/$DBNAME
     docker cp mongodocker:/tmp/$DBNAME /tmp/$DBNAME
     tar cvf /tmp/$DBNAME.tar -C /tmp/$DBNAME/ .
@@ -160,7 +160,7 @@ mongo_backup() {
 
 mongo_clone() {
       echo "Copying init db..."
-      [ ! "$(docker ps -a | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
+      [ ! "$(docker ps | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
       docker exec -i mongodocker mongodump --uri "$SDBHOST/$SDBNAME" -u$SDBUSER -p$SDBPASSWORD --gzip --archive | mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --nsFrom="$SDBNAME.*" --nsTo="$DBNAME.*" --gzip --archive
       docker rm -f mongodocker
 }
@@ -170,7 +170,7 @@ mongo_restore() {
       aws s3 cp s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/$DBNAME.tar /tmp/ --profile $AWS_PROFILE
       mkdir -p /tmp/dump
       tar xvf /tmp/$DBNAME.tar -C /tmp/dump
-      [ ! "$(docker ps -a | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
+      [ ! "$(docker ps | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
       docker cp /tmp/dump mongodocker:/tmp/dump
       docker exec -i mongodocker /usr/bin/mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --gzip /tmp/dump
       rm -rf /tmp/$DBNAME.tar /tmp/dump
