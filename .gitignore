@@ -23,6 +23,3 @@ override.tf.json
 *_override.tf
 *_override.tf.json
 
-# Rendered sh files
-**/*_backup.sh
-**/*_restore.sh
