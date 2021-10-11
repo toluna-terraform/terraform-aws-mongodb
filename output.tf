@@ -3,5 +3,5 @@ output "cluster_connection_sting" {
 }
 
 output "s3_dump_file" {
-    value = jsondecode("${data.external.get_dump_data.result.object}")
+    value = "${data.aws_s3_bucket_object.get_dump_data}"
 }

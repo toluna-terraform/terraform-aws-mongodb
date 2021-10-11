@@ -1,40 +1,13 @@
-data "template_file" "mongo_backup" {
-  template = "${file("${path.module}/files/mongo_backup.tpl")}"
-  vars = {
-    PATH_MODULE="${path.module}"
-    SERVICE_NAME="${var.app_name}"
-    WORKSPACE="${var.environment}"
-    ENV_TYPE="${var.env_type}"
-    AWS_PROFILE="${var.aws_profile}"
-    DBHOST="${mongodbatlas_cluster.main.srv_address}"
-    INIT_DB_WORKSPACE="${var.init_db}"
-  }
-  depends_on = [
-    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, aws_ssm_parameter.db_name
-  ]
+data "aws_s3_bucket_objects" "get_dump_list" {
+  bucket = "${var.app_name}-${var.env_type}-mongodb-dumps"
+  prefix = "${var.environment}/${var.db_name}.tar"
 }
 
-data "template_file" "mongo_restore" {
-  template = "${file("${path.module}/files/mongo_restore.tpl")}"
-  vars = {
-    PATH_MODULE="${path.module}"
-    SERVICE_NAME="${var.app_name}"
-    WORKSPACE="${var.environment}"
-    ENV_TYPE="${var.env_type}"
-    AWS_PROFILE="${var.aws_profile}"
-    DBHOST="${mongodbatlas_cluster.main.srv_address}"
-    INIT_DB_WORKSPACE="${var.init_db}"
-  }
-  depends_on = [
-    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, aws_ssm_parameter.db_name
+data "aws_s3_bucket_object" "get_dump_data" {
+  count  = length(data.aws_s3_bucket_objects.get_dump_list.keys)
+  bucket = data.aws_s3_bucket_objects.get_dump_list.bucket
+  key    = data.aws_s3_bucket_objects.get_dump_list.keys[0]
+    depends_on = [
+    data.aws_s3_bucket_objects.get_dump_list
   ]
-}
-
-data "external" "get_dump_data" {
-  program = ["bash", "${path.module}/files/get_dump_data.sh"]
-  query = {
-    bucket = "${var.app_name}-${var.env_type}-mongodb-dumps"
-    key = "${var.environment}/devops.tar"
-    profile = "${var.aws_profile}"
-  }
 }
