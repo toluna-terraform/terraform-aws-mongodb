@@ -29,7 +29,7 @@ resource "aws_ssm_parameter" "db_hostname" {
 
 resource "local_file" "mongo_backup" {
   filename = "${path.module}/files/${var.environment}/mongo_backup.sh"
-  content = templatefile("${path.module}/files/${var.environment}/mongo_backup.tpl",
+  content = templatefile("${path.module}/files/mongo_backup.tpl",
   {
     PATH_MODULE = "${path.module}",
     SERVICE_NAME = "${var.app_name}",
