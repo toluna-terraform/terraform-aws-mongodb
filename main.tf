@@ -69,7 +69,7 @@ resource "null_resource" "db_backup" {
   provisioner "local-exec" {
     when       = destroy
     on_failure = fail
-    command    = "${path.module}/files/${var.environment}/mongo_backup.sh"
+    command    = "${path.module}/files/${terraform.workspace}/mongo_backup.sh"
   }
   depends_on = [
     mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, aws_ssm_parameter.db_name,local_file.mongo_backup
@@ -82,7 +82,7 @@ resource "null_resource" "db_restore" {
     address = "${mongodbatlas_cluster.main.srv_address}",
   }
   provisioner "local-exec" {
-    command = "${path.module}/files/${var.environment}/mongo_restore.sh"
+    command = "${path.module}/files/${terraform.workspace}/mongo_restore.sh"
   }
   depends_on = [
     mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, aws_ssm_parameter.db_name,local_file.mongo_restore
