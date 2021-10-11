@@ -27,52 +27,20 @@ resource "aws_ssm_parameter" "db_hostname" {
   ]
 }
 
-resource "local_file" "mongo_backup" {
-  filename = "${path.module}/files/${var.environment}/mongo_backup.sh"
-  content = templatefile("${path.module}/files/mongo_backup.tpl",
-  {
-    PATH_MODULE = "${path.module}",
-    SERVICE_NAME = "${var.app_name}",
-    WORKSPACE = "${var.environment}",
-    ENV_TYPE = "${var.env_type}",
-    AWS_PROFILE = "${var.aws_profile}",
-    DBHOST = "${mongodbatlas_cluster.main.srv_address}",
-    INIT_DB_WORKSPACE = "${var.init_db}"
-  })
-  depends_on = [
-    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, aws_ssm_parameter.db_name
-  ]
-}
-
-resource "local_file" "mongo_restore" {
-  filename = "${path.module}/files/${var.environment}/mongo_restore.sh"
-  content = templatefile("${path.module}/files/mongo_restore.tpl",
-  {
-    PATH_MODULE="${path.module}",
-    SERVICE_NAME="${var.app_name}",
-    WORKSPACE="${var.environment}",
-    ENV_TYPE="${var.env_type}",
-    AWS_PROFILE="${var.aws_profile}",
-    DBHOST="${mongodbatlas_cluster.main.srv_address}",
-    INIT_DB_WORKSPACE="${var.init_db}"
-  })
-  depends_on = [
-    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, aws_ssm_parameter.db_name
-  ]
-}
-
 resource "null_resource" "db_backup" {
   count = var.backup_on_destroy ? 1 : 0
   triggers = {
     address = "${mongodbatlas_cluster.main.srv_address}",
+    backup_file = "${data.template_file.mongo_backup.rendered}"
   }
+
   provisioner "local-exec" {
     when       = destroy
     on_failure = fail
-    command    = "${path.module}/files/${terraform.workspace}/mongo_backup.sh"
+    command    = self.triggers.backup_file
   }
   depends_on = [
-    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, aws_ssm_parameter.db_name,local_file.mongo_backup
+    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, aws_ssm_parameter.db_name,data.template_file.mongo_backup
   ]
 }
 
@@ -82,9 +50,9 @@ resource "null_resource" "db_restore" {
     address = "${mongodbatlas_cluster.main.srv_address}",
   }
   provisioner "local-exec" {
-    command = "${path.module}/files/${terraform.workspace}/mongo_restore.sh"
+    command = "${data.template_file.mongo_restore.rendered}"
   }
   depends_on = [
-    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, aws_ssm_parameter.db_name,local_file.mongo_restore
+    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, aws_ssm_parameter.db_name,data.template_file.mongo_restore
   ]
 }
