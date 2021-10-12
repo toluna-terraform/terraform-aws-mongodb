@@ -28,10 +28,10 @@ The module requires some configurations for Atlas MongoDB
   
 If you intend to copy db from another workspace:
 #### AWS SSM required parameters for restoring from another environment:
-- /infra/<source workspace name>/db-name = the source db name to copy
-- /infra/<source workspace name>/db-username = user name with access to source db
-- /infra/<source workspace name>/db-password = password for user with access to source db
-- /infra/<source workspace name>/db-host = host name of the source db
+- /infra/<\source workspace name>/db-name = the source db name to copy
+- /infra/<\source workspace name>/db-username = user name with access to source db
+- /infra/<\source workspace name>/db-password = password for user with access to source db
+- /infra/<\source workspace name>/db-host = host name of the source db
 * The module creates these SSM parameters when creating an environment so, if your source environment was already created you do not need to manually set these parameters 
 
 ## Usage
