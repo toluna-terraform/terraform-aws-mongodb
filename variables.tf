@@ -76,7 +76,7 @@ variable "env_type" {
   description = "Environment type prod/non-prod"
 } 
 
-variable "init_db" {
+variable "init_db_environment" {
   default = "NULL"
   description = "Source envirnment to restore db from"
 } 
