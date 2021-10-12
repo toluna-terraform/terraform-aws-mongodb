@@ -1,6 +1,21 @@
 # terraform-aws-mongodb
 Integrating MongoDB Atlas with AWS infra [Terraform module](https://registry.terraform.io/modules/toluna-terraform/mongodb/aws/latest)
 
+## Description
+This module supports persistency of MongoDB , by creating/restoring dump files to AWS s3 bucket, this is done by running a shell script upon apply and before destroy, the shell script starts a docker mongoDB docker image to prevent the need to install mongoDB tools locally , it will then read the needed parameters from AWS SSM Parameter store and run the restore/dump function.
+The module also supports starting with a copy of the DB from another created environment (I.E. you can starts a "DEV" environment with a copy of "Production" DB).
+
+
+The following resources will be created:
+- MongoDB cluster
+- MongoDB User with read/write permissions (including password)
+- MongoDB Whitelist including Ip's of allowed environments
+- The following SSM Params will be created:
+  - db_username
+  - db_password
+  - db_hostname (MongoDB connection string)
+- Upon destroy if MongoDB dumps bucket does not exist it will be created
+
 ## Requirements
 The module requires some configurations for Atlas MongoDB
 #### Minimum requirements:
@@ -10,6 +25,14 @@ The module requires some configurations for Atlas MongoDB
 - mongodbatlas public_key (api key for allowing Terraform to perform actions)
 - mongodbatlas private_key (api key for allowing Terraform to perform actions)
 - mongodbatlas atlasprojectid
+  
+If you intend to copy db from another workspace:
+#### AWS SSM required parameters for restoring from another environment:
+- /infra/<source workspace name>/db-name = the source db name to copy
+- /infra/<source workspace name>/db-username = user name with access to source db
+- /infra/<source workspace name>/db-password = password for user with access to source db
+- /infra/<source workspace name>/db-host = host name of the source db
+* The module creates these SSM parameters when creating an environment so, if your source environment was already created you do not need to manually set these parameters 
 
 ## Usage
 ```hcl
@@ -26,7 +49,7 @@ module "mongodb" {
   backup_on_destroy           = true
   restore_on_create           = true
   db_name                     = local.env_vars.db_name
-  init_db                     = local.env_vars.init_db
+  init_db_environment         = local.env_vars.init_db_environment
   ip_whitelist                = local.ip_whitelist
   atlas_num_of_shards         = 1
   mongo_db_major_version      = "4.2"
@@ -88,17 +111,8 @@ if restore_on_create = true the following flow is used:
       └────────────────┘            └─────────────────────────────────────┘
 ```
 * To force initialization from another environment DB you must remove the dump file of your target environment from s3  and set the init_db_environment variable to the name of the source environment you want to copy the db from.
-
-
-The following resources will be created:
-- MongoDB cluster
-- MongoDB User with read/write permissions (including password)
-- MongoDB Whitelist including Ip's of allowed environments
-- The following SSM Params will be created:
-  - db_username
-  - db_password
-  - db_hostname (MongoDB connection string)
-- Upon destroy if MongoDB dumps bucket does not exist it will be created
+* If backup_on_destroy = true, each time the MongoDB cluster is destroyed (including force update - force replace), a dump will be created and uploaded to s3, so if "force replace" is done the DB restored will be from latest point before update.
+* To force a replacement of MongoDB cluster you can run terraform taint <module.mongodbatlas_cluster.main>
 
 ## Requirements
 
