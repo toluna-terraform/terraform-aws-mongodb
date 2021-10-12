@@ -47,7 +47,7 @@ resource "null_resource" "db_backup" {
 resource "null_resource" "db_restore" {
   count = var.restore_on_create ? 1 : 0
   triggers = {
-    address = "${mongodbatlas_cluster.main.srv_address}",
+    address = "${mongodbatlas_cluster.main.srv_address}"
   }
   provisioner "local-exec" {
     command = "${path.module}/files/${data.template_file.mongo_restore.rendered}"
