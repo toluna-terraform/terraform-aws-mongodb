@@ -36,6 +36,47 @@ module "mongodb" {
   provider_instance_size_name = "M10"
 }
 ```
+
+```flow
+                                             ┌────────────────────────┐
+                                             │                        │
+                                             │ Is s3 dump file found  │
+                                             │                        │
+                                             └───────────┬────────────┘
+                                                         │
+                                 ┌────────┐              │              ┌─────────┐
+                                 │        │              │              │         │
+                                 │   NO   │ ◄────────────┴─────────────►│   YES   │
+                                 │        │                             │         │
+                                 └───┬────┘                             └────┬────┘
+                                     │                                       │
+                                     ▼                                       ▼
+                      ┌───────────────────────────────┐        ┌──────────────────────────┐
+                      │                               │        │                          │
+                      │ Is initial DB Environment set │        │Restore from s3 dump file │
+                      │                               │        │                          │
+                      └───────────────┬───────────────┘        └──────────────────────────┘
+                                      │
+                                      │
+           ┌────────┐                 │           ┌─────────┐
+           │        │                 │           │         │
+           │   NO   │ ◄───────────────┴──────────►│   YES   │
+           │        │                             │         │
+           └───┬────┘                             └────┬────┘
+               │                                       │
+               ▼                                       ▼
+      ┌────────────────┐            ┌─────────────────────────────────────┐
+      │                │            │                                     │
+      │ Start empty DB │            │ Restore from initial DB Environment │
+      │                │            │                                     │
+      └────────────────┘            └─────────────────────────────────────┘
+
+
+                                                           ▼
+
+
+                                                      ▼
+```
 To run the mongorestore/mongodump script mnually (mongo_actions.sh): 
 - cd to the path containing your environment.json (see examples)
 - mongo_actions.sh -s|--service_name <SERVICE_NAME> -a|--action <mongo_backup/mongo_restore> -w|--workspace <Terraform workspace> -e|--env_type <prod/non-prod> -p|--profile <AWS_PROFILE> -dbh|--dbhost <Mongo DB URI> -dbs|--source_db <source workspace to copy DB from on restore(optional)>
