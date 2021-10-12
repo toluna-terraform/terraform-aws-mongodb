@@ -61,5 +61,6 @@ No inputs.
 | Name | Value |
 |------|-------|
 | cluster_connection_sting| cluster connection string( Stripped without "mongodb+srv://" ) |
+| s3_dump_file | Details about the dump file created |
 
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
