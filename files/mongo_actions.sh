@@ -155,7 +155,9 @@ mongo_clone() {
           exit 1
       fi
       [ ! "$(docker ps | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
-      docker exec -i mongodocker mongodump --uri "$SDBHOST/$SDBNAME" -u$SDBUSER -p$SDBPASSWORD --gzip --archive | mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --nsFrom="$SDBNAME.*" --nsTo="$DBNAME.*" --gzip --archive
+      docker exec -i mongodocker /bin/bash <<EOF 
+      /usr/bin/mongodump --uri "$SDBHOST/$SDBNAME" -u$SDBUSER -p$SDBPASSWORD --gzip --archive | /usr/bin/mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --nsFrom="$SDBNAME.*" --nsTo="$DBNAME.*" --gzip --archive
+EOF
       docker rm -f mongodocker
 }
 
