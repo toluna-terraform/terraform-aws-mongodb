@@ -37,6 +37,22 @@ module "mongodb" {
 }
 ```
 
+To run the mongorestore/mongodump script mnually (mongo_actions.sh): 
+- cd to the path containing your environment.json (see examples)
+- mongo_actions.sh -s|--service_name <SERVICE_NAME> -a|--action <mongo_backup/mongo_restore> -w|--workspace <Terraform workspace> -e|--env_type <prod/non-prod> -p|--profile <AWS_PROFILE> -dbh|--dbhost <Mongo DB URI> -dbs|--source_db <source workspace to copy DB from on restore(optional)>
+    - I.E. for backup 
+    - mongo_actions.sh --service_name myService --action mongo_backup --workspace my-data --env_type non-prod --profile - my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string
+    - I.E. for restore
+    - mongo_actions.sh --service_name myService --action mongo_restore --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string --source_db test-data
+
+## Toggles
+#### Backup and Restore flags:
+```yaml
+backup_on_destroy     = true
+restore_on_create     = true
+```
+
+if restore_on_create = true the following flow is used:
 ```flow
                                              ┌────────────────────────┐
                                              │                        │
@@ -70,27 +86,8 @@ module "mongodb" {
       │ Start empty DB │            │ Restore from initial DB Environment │
       │                │            │                                     │
       └────────────────┘            └─────────────────────────────────────┘
-
-
-                                                           ▼
-
-
-                                                      ▼
 ```
-To run the mongorestore/mongodump script mnually (mongo_actions.sh): 
-- cd to the path containing your environment.json (see examples)
-- mongo_actions.sh -s|--service_name <SERVICE_NAME> -a|--action <mongo_backup/mongo_restore> -w|--workspace <Terraform workspace> -e|--env_type <prod/non-prod> -p|--profile <AWS_PROFILE> -dbh|--dbhost <Mongo DB URI> -dbs|--source_db <source workspace to copy DB from on restore(optional)>
-    - I.E. for backup 
-    - mongo_actions.sh --service_name myService --action mongo_backup --workspace my-data --env_type non-prod --profile - my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string
-    - I.E. for restore
-    - mongo_actions.sh --service_name myService --action mongo_restore --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string --source_db test-data
 
-## Toggles
-#### Backup and Restore flags:
-```yaml
-backup_on_destroy     = true
-restore_on_create     = true
-```
 The following resources will be created:
 - MongoDB cluster
 - MongoDB User with read/write permissions (including password)
