@@ -87,6 +87,8 @@ if restore_on_create = true the following flow is used:
       │                │            │                                     │
       └────────────────┘            └─────────────────────────────────────┘
 ```
+* To force initialization from another environment DB you must remove the dump file of your target environment from s3  and set the init_db_environment variable to the name of the source environment you want to copy the db from.
+
 
 The following resources will be created:
 - MongoDB cluster
