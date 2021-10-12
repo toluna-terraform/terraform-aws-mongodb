@@ -9,7 +9,7 @@ unset ENV_TYPE
 unset AWS_PROFILE
 unset DBHOST
 unset DBNAME
-unset INIT_DB_WORKSPACE
+unset INIT_DB_ENVIRONMENT
 
 usage() {
   cat <<EOM
@@ -59,9 +59,9 @@ while [[ $# -gt 0 ]]; do
     -sdb|--source_db)
         if [[ "$2" == "NULL" ]];
         then 
-            unset INIT_DB_WORKSPACE
+            unset INIT_DB_ENVIRONMENT
         else 
-            INIT_DB_WORKSPACE="$2"
+            INIT_DB_ENVIRONMENT="$2"
         fi
         shift # past argument
         shift # past value
@@ -104,10 +104,10 @@ fi
 ### VALIDATE DUMP EXISTS FOR RESTORE ###
 if [[ "${ACTION_TYPE}" == "mongo_restore" ]]; then
     aws s3api head-object --bucket "${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps" --key $WORKSPACE/$DBNAME.tar --profile $AWS_PROFILE --no-cli-pager || object_not_exist=true 
-    if [[ $object_not_exist && -z "${INIT_DB_WORKSPACE}" ]]; then
+    if [[ $object_not_exist && -z "${INIT_DB_ENVIRONMENT}" ]]; then
         echo "Dump file not found not performing restore"
         exit 0
-    elif [[ $object_not_exist && -n "${INIT_DB_WORKSPACE}" ]]
+    elif [[ $object_not_exist && -n "${INIT_DB_ENVIRONMENT}" ]]
     then
         ACTION_TYPE="mongo_clone"
     else
@@ -146,10 +146,10 @@ mongo_backup() {
 mongo_clone() {
       echo "Copying init db..."
       ### GET SSM PARAMS OF SOURCE DB ###
-      SDBNAME=$(aws ssm get-parameter --name "/infra/$INIT_DB_WORKSPACE/db-name" --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
-      SDBHOST=$(aws ssm get-parameter --name "/infra/$INIT_DB_WORKSPACE/db-host" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
-      SDBUSER=$(aws ssm get-parameter --name "/infra/$INIT_DB_WORKSPACE/db-username" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
-      SDBPASSWORD=$(aws ssm get-parameter --name "/infra/$INIT_DB_WORKSPACE/db-password" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
+      SDBNAME=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-name" --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
+      SDBHOST=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-host" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
+      SDBUSER=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-username" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
+      SDBPASSWORD=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-password" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
       if [[ -z "$SDBUSER" ]] || [[ -z "$SDBPASSWORD" ]] || [[ -z "$SDBHOST" ]]; then
           echo "Could not retrieve one or more parameters from SSM!!!"
           exit 1
