@@ -62,7 +62,6 @@ while [[ $# -gt 0 ]]; do
             unset INIT_DB_WORKSPACE
         else 
             INIT_DB_WORKSPACE="$2"
-            ACTION_TYPE="mongo_clone"
         fi
         shift # past argument
         shift # past value
