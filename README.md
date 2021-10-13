@@ -148,4 +148,3 @@ No inputs.
 | cluster_connection_sting| cluster connection string( Stripped without "mongodb+srv://" ) |
 | s3_dump_file | Details about the dump file created |
 
-<meta name="google-site-verification" content="YKk0RJgPEwiVfUsQ17oUBGc6IiJprtmL0VSMBOJLFYU" />
