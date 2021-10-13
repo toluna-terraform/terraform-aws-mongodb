@@ -2,18 +2,23 @@
 Integrating MongoDB Atlas with AWS infra [Terraform module](https://registry.terraform.io/modules/toluna-terraform/mongodb/aws/latest)
 
 ### Description
-This module supports persistency of MongoDB , by creating/restoring dump files to AWS s3 bucket, this is done by running a shell script upon apply and before destroy, the shell script starts a docker mongoDB docker image to prevent the need to install mongoDB tools locally , it will then read the needed parameters from AWS SSM Parameter store and run the restore/dump function.
-The module also supports starting with a copy of the DB from another created environment and/or AWS account (I.E. you can start a "DEV" environment with a copy of "Production" DB that resides on a diffrent AWS account).
+This module supports persistency of MongoDB, by creating/restoring dump files to AWS s3 bucket, this is done by running a shell script upon apply and before destroy, the shell script starts a docker mongoDB docker image to prevent the need to install mongoDB tools locally, it will then read the needed parameters from AWS SSM Parameter store and run the restore/dump function.
+The module also supports starting with a copy of the DB from another created environment and/or AWS account (I.E. you can start a "DEV" environment with a copy of "Production" DB that resides on a different AWS account).
+The creation of dump files and restore/copy functions are triggered by terraform events (apply/destroy) based on the mongoDB cluster resource.
+\* an environment equals in it name to the Terraform workspace it runs under so when referring to an environment or workspace throughout this document their value is actually the same.
+
 
 
 The following resources will be created:
 - MongoDB cluster
 - MongoDB User with read/write permissions (including password)
-- MongoDB Whitelist including Ip's of allowed environments
+- MongoDB Whitelist including IPs
 - The following SSM Params will be created:
-  - db_username
-  - db_password
-  - db_hostname (MongoDB connection string)
+  - /infra/&lt;environment name&gt;/db-name = the db name 
+  - /infra/&lt;environment name&gt;/db-username = user name with access to db (encrypted)
+  - /infra/&lt;environment name&gt;/db-password = password for user with access to db (encrypted)
+  - /infra/&lt;environment name&gt;/db-host = host name of the db (encrypted)
+  - **If you intend to copy a db from another workspace you first must either use this  module to created the source DB or alternatively manually add these parameters to the SSM Parameter store**
 - Upon destroy if MongoDB dumps bucket does not exist it will be created
 
 ## Requirements
@@ -25,14 +30,6 @@ The module requires some configurations for Atlas MongoDB
 - mongodbatlas public_key (api key for allowing Terraform to perform actions)
 - mongodbatlas private_key (api key for allowing Terraform to perform actions)
 - mongodbatlas atlasprojectid
-  
-If you intend to copy db from another workspace:
-#### AWS SSM required parameters for restoring from another environment:
-- /infra/&lt;source workspace name&gt;/db-name = the source db name to copy
-- /infra/&lt;source workspace name&gt;/db-username = user name with access to source db
-- /infra/&lt;source workspace name&gt;/db-password = password for user with access to source db
-- /infra/&lt;source workspace name&gt;/db-host = host name of the source db
-* The module creates these SSM parameters when creating an environment so, if your source environment was already created you do not need to manually set these parameters 
 
 ## Usage
 ```hcl
@@ -71,16 +68,18 @@ To run the mongorestore/mongodump script mnually (mongo_actions.sh):
     - mongo_actions.sh --service_name myService --action mongo_restore --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string --source_db test-data --source-db-profile source-test-profile
 
 ## Toggles
-#### Backup and Restore flags:
+#### Backup, Restore and Initial DB flags:
 ```yaml
-backup_on_destroy     = true
-restore_on_create     = true
+backup_on_destroy     = boolean (true/false) default = true
+restore_on_create     = boolean (true/false) default = true
+init_db_environment   = string the name of the source environment to copy db from
+init_db_aws_profile   = string the name of the source environment aws profile to use
 ```
 
 if restore_on_create = true the following flow is used:
 ```flow
                                              ┌────────────────────────┐
-                                             │ Is s3 dump file found  │
+                                             │ Is s3 dump file found  │7
                                              └───────────┬────────────┘
                                                          │
                                  ┌────────┐              │              ┌─────────┐
@@ -101,9 +100,9 @@ if restore_on_create = true the following flow is used:
       │ Start empty DB │            │ Restore from initial DB Environment │
       └────────────────┘            └─────────────────────────────────────┘
 ```
-* To force initialization from another environment DB you must remove the dump file of your target environment from s3  and set the init_db_environment variable to the name of the source environment you want to copy the db from.
-* If backup_on_destroy = true, each time the MongoDB cluster is destroyed (including force update - force replace), a dump will be created and uploaded to s3, so if "force replace" is done the DB restored will be from latest point before update.
-* To force a replacement of MongoDB cluster you can run terraform taint <module.mongodbatlas_cluster.main>
+- **To force initialization from another environment DB you must remove the dump file of your target environment from s3  and set the init_db_environment variable to the name of the source environment you want to copy the db from.**
+- **If backup_on_destroy = true, each time the MongoDB cluster is destroyed (including force update - force replace), a dump will be created and uploaded to s3, so if "force replace" is done the DB restored will be from latest point before update.**
+- **To force a replacement of MongoDB cluster you can run terraform taint <module.mongodbatlas_cluster.main>**
 
 ## Requirements
 
