@@ -80,7 +80,7 @@ init_db_aws_profile   = string the name of the source environment aws profile to
 if restore_on_create = true the following flow is used:
 ```flow
                                              ┌────────────────────────┐
-                                             │ Is s3 dump file found  │7
+                                             │ Is s3 dump file found  │
                                              └───────────┬────────────┘
                                                          │
                                  ┌────────┐              │              ┌─────────┐
