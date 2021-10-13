@@ -25,7 +25,8 @@ module "mongodb" {
   backup_on_destroy     = true
   restore_on_create     = true
   db_name               = "test-db"
-  init_db               = "src-db"
+  init_db_environment   = "src-db"
+  init_db_aws_profile   = "src-aws-profile"
   ip_whitelist          = ["127.0.0.1","127.0.0.2","127.0.0.3"]
   atlas_num_of_shards         = 1
   mongo_db_major_version      = "4.2"

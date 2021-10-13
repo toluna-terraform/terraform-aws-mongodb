@@ -76,7 +76,12 @@ variable "env_type" {
   description = "Environment type prod/non-prod"
 } 
 
-variable "init_db" {
+variable "init_db_environment" {
   default = "NULL"
-  description = "Source envirnment to restore db from"
+  description = "Source envirnment name to restore db from"
+} 
+
+variable "init_db_aws_profile" {
+  default = "NULL"
+  description = "Source envirnment aws profile to restore db from"
 } 
