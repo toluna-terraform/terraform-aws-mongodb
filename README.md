@@ -49,7 +49,7 @@ module "mongodb" {
   backup_on_destroy           = true
   restore_on_create           = true
   db_name                     = local.env_vars.db_name
-  init_db_environment         = local.env_vars.init_db_environment
+  init_db_data                = local.init_db_data
   ip_whitelist                = local.ip_whitelist
   atlas_num_of_shards         = 1
   mongo_db_major_version      = "4.2"
@@ -66,7 +66,7 @@ To run the mongorestore/mongodump script mnually (mongo_actions.sh):
     - I.E. for backup 
     - mongo_actions.sh --service_name myService --action mongo_backup --workspace my-data --env_type non-prod --profile - my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string
     - I.E. for restore
-    - mongo_actions.sh --service_name myService --action mongo_restore --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string --source_db test-data
+    - mongo_actions.sh --service_name myService --action mongo_restore --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string --source_db test-data --source-db-profile source-test-profile
 
 ## Toggles
 #### Backup and Restore flags:
