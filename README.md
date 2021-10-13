@@ -1,9 +1,9 @@
 # terraform-aws-mongodb
 Integrating MongoDB Atlas with AWS infra [Terraform module](https://registry.terraform.io/modules/toluna-terraform/mongodb/aws/latest)
 
-## Description
+### Description
 This module supports persistency of MongoDB , by creating/restoring dump files to AWS s3 bucket, this is done by running a shell script upon apply and before destroy, the shell script starts a docker mongoDB docker image to prevent the need to install mongoDB tools locally , it will then read the needed parameters from AWS SSM Parameter store and run the restore/dump function.
-The module also supports starting with a copy of the DB from another created environment (I.E. you can start a "DEV" environment with a copy of "Production" DB).
+The module also supports starting with a copy of the DB from another created environment and/or AWS account (I.E. you can start a "DEV" environment with a copy of "Production" DB that resides on a diffrent AWS account).
 
 
 The following resources will be created:
@@ -49,7 +49,8 @@ module "mongodb" {
   backup_on_destroy           = true
   restore_on_create           = true
   db_name                     = local.env_vars.db_name
-  init_db_data                = local.init_db_data
+  init_db_environment         = local.init_db_environment
+  init_db_aws_profile         = local.init_db_aws_profile
   ip_whitelist                = local.ip_whitelist
   atlas_num_of_shards         = 1
   mongo_db_major_version      = "4.2"
@@ -147,4 +148,4 @@ No inputs.
 |------|-------|
 | cluster_connection_sting| cluster connection string( Stripped without "mongodb+srv://" ) |
 | s3_dump_file | Details about the dump file created |
-
+| env_type | The environment type created "prod/non-prod" |
