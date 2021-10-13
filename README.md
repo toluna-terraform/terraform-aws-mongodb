@@ -5,7 +5,8 @@ Integrating MongoDB Atlas with AWS infra [Terraform module](https://registry.ter
 This module supports persistency of MongoDB, by creating/restoring dump files to AWS s3 bucket, this is done by running a shell script upon apply and before destroy, the shell script starts a docker mongoDB docker image to prevent the need to install mongoDB tools locally, it will then read the needed parameters from AWS SSM Parameter store and run the restore/dump function.
 The module also supports starting with a copy of the DB from another created environment and/or AWS account (I.E. you can start a "DEV" environment with a copy of "Production" DB that resides on a different AWS account).
 The creation of dump files and restore/copy functions are triggered by terraform events (apply/destroy) based on the mongoDB cluster resource.
-\* an environment equals in it name to the Terraform workspace it runs under so when referring to an environment or workspace throughout this document their value is actually the same.
+
+\* **an environment equals in it name to the Terraform workspace it runs under so when referring to an environment or workspace throughout this document their value is actually the same.**
 
 
 
