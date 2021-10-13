@@ -59,13 +59,7 @@ module "mongodb" {
   provider_instance_size_name = "M10"
 }
 ```
-```mermaid
-graph TD;
-  A-->B;
-  A-->C;
-  B-->D;
-  C-->D;
-```
+
 
 To run the mongorestore/mongodump script mnually (mongo_actions.sh): 
 - cd to the path containing your environment.json (see examples)
@@ -85,36 +79,25 @@ restore_on_create     = true
 if restore_on_create = true the following flow is used:
 ```flow
                                              ┌────────────────────────┐
-                                             │                        │
                                              │ Is s3 dump file found  │
-                                             │                        │
                                              └───────────┬────────────┘
                                                          │
                                  ┌────────┐              │              ┌─────────┐
-                                 │        │              │              │         │
                                  │   NO   │ ◄────────────┴─────────────►│   YES   │
-                                 │        │                             │         │
                                  └───┬────┘                             └────┬────┘
                                      │                                       │
                                      ▼                                       ▼
                       ┌───────────────────────────────┐        ┌──────────────────────────┐
-                      │                               │        │                          │
                       │ Is initial DB Environment set │        │Restore from s3 dump file │
-                      │                               │        │                          │
                       └───────────────┬───────────────┘        └──────────────────────────┘
                                       │
-                                      │
            ┌────────┐                 │           ┌─────────┐
-           │        │                 │           │         │
            │   NO   │ ◄───────────────┴──────────►│   YES   │
-           │        │                             │         │
            └───┬────┘                             └────┬────┘
                │                                       │
                ▼                                       ▼
       ┌────────────────┐            ┌─────────────────────────────────────┐
-      │                │            │                                     │
       │ Start empty DB │            │ Restore from initial DB Environment │
-      │                │            │                                     │
       └────────────────┘            └─────────────────────────────────────┘
 ```
 * To force initialization from another environment DB you must remove the dump file of your target environment from s3  and set the init_db_environment variable to the name of the source environment you want to copy the db from.
