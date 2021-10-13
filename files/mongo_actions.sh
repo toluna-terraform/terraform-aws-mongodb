@@ -10,6 +10,7 @@ unset AWS_PROFILE
 unset DBHOST
 unset DBNAME
 unset INIT_DB_ENVIRONMENT
+unset INIT_DB_AWS_PROFILE
 
 usage() {
   cat <<EOM
@@ -62,6 +63,16 @@ while [[ $# -gt 0 ]]; do
             unset INIT_DB_ENVIRONMENT
         else 
             INIT_DB_ENVIRONMENT="$2"
+        fi
+        shift # past argument
+        shift # past value
+      ;;
+    -sdbp|--source_db_profile)
+        if [[ "$2" == "NULL" ]];
+        then 
+            unset INIT_DB_AWS_PROFILE
+        else 
+            INIT_DB_AWS_PROFILE="$2"
         fi
         shift # past argument
         shift # past value
@@ -146,10 +157,10 @@ mongo_backup() {
 mongo_clone() {
       echo "Copying init db..."
       ### GET SSM PARAMS OF SOURCE DB ###
-      SDBNAME=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-name" --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
-      SDBHOST=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-host" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
-      SDBUSER=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-username" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
-      SDBPASSWORD=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-password" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
+      SDBNAME=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-name" --query 'Parameter.Value' --profile $INIT_DB_AWS_PROFILE  --output text)
+      SDBHOST=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-host" --with-decryption --query 'Parameter.Value' --profile $INIT_DB_AWS_PROFILE  --output text)
+      SDBUSER=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-username" --with-decryption --query 'Parameter.Value' --profile $INIT_DB_AWS_PROFILE  --output text)
+      SDBPASSWORD=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-password" --with-decryption --query 'Parameter.Value' --profile $INIT_DB_AWS_PROFILE  --output text)
       if [[ -z "$SDBUSER" ]] || [[ -z "$SDBPASSWORD" ]] || [[ -z "$SDBHOST" ]]; then
           echo "Could not retrieve one or more parameters from SSM!!!"
           exit 1
