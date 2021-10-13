@@ -6,7 +6,7 @@ This module supports persistency of MongoDB, by creating/restoring dump files to
 The module also supports starting with a copy of the DB from another created environment and/or AWS account (I.E. you can start a "DEV" environment with a copy of "Production" DB that resides on a different AWS account).
 The creation of dump files and restore/copy functions are triggered by terraform events (apply/destroy) based on the mongoDB cluster resource.
 
-\* **an environment equals in it name to the Terraform workspace it runs under so when referring to an environment or workspace throughout this document their value is actually the same.**
+\* **an environment equals in it's name to the Terraform workspace it runs under so when referring to an environment or workspace throughout this document their value is actually the same.**
 
 
 
