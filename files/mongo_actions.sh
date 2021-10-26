@@ -165,6 +165,7 @@ mongo_clone() {
           echo "Could not retrieve one or more parameters from SSM!!!"
           exit 1
       fi
+      SDBHOST="mongodb+srv://+$SDBHOST"
       [ ! "$(docker ps | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
       docker exec -i mongodocker /bin/bash <<EOF 
       mongodump --uri "$SDBHOST/$SDBNAME" -u$SDBUSER -p$SDBPASSWORD --gzip --archive | mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --nsFrom="$SDBNAME.*" --nsTo="$DBNAME.*" --gzip --archive

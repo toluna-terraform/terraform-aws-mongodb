@@ -19,7 +19,7 @@ data "template_file" "mongo_restore" {
     WORKSPACE="${var.environment}"
     ENV_TYPE="${var.env_type}"
     AWS_PROFILE="${var.aws_profile}"
-    DBHOST="${mongodbatlas_cluster.main.srv_address}"
+    DBHOST="mongodb+srv://${mongodbatlas_cluster.main.srv_address}"
     INIT_DB_ENVIRONMENT="${var.init_db_environment}"
     INIT_DB_AWS_PROFILE="${var.init_db_aws_profile}"
   }
@@ -35,7 +35,7 @@ data "template_file" "mongo_backup" {
     WORKSPACE="${var.environment}"
     ENV_TYPE="${var.env_type}"
     AWS_PROFILE="${var.aws_profile}"
-    DBHOST="${mongodbatlas_cluster.main.srv_address}"
+    DBHOST="mongodb+srv://${mongodbatlas_cluster.main.srv_address}"
   }
   depends_on = [
     mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, aws_ssm_parameter.db_name
