@@ -156,6 +156,7 @@ else
     apt-get -y install docker-ce docker-ce-cli containerd.io
     service docker start
   elif [[ `apk --v` ]]; then
+    su - root
     apk add --update docker docker-cli openrc 
     rc-update add docker boot
   else
