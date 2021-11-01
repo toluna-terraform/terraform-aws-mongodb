@@ -54,8 +54,7 @@ while [[ $# -gt 0 ]]; do
       then
         AWS_PROFILE="$2"
       else 
-        aws configure set region us-east-1 
-        AWS_PROFILE="default"
+        unset AWS_PROFILE
       fi
       shift # past argument
       shift # past value
@@ -103,9 +102,15 @@ else
 fi
 
 ### GET TARGET DB CONNECTION DETAILS FROM SSM ###
+if [[ -z "${AWS_PROFILE}" ]]; then
+DBNAME=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-name" --query 'Parameter.Value' --output text)
+DBUSER=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-username" --with-decryption --query 'Parameter.Value' --output text)
+DBPASSWORD=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-password" --with-decryption --query 'Parameter.Value' --output text)
+else
 DBNAME=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-name" --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
 DBUSER=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-username" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
 DBPASSWORD=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-password" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
+fi
 if [[ -z "$DBNAME"  ]] || [[ -z "$DBUSER" ]] || [[ -z "$DBPASSWORD" ]]; then
         echo "Could not retrieve one or more parameters from SSM!!!"
         exit 1
@@ -113,16 +118,20 @@ fi
 
 ### VALIDATE DUMP EXISTS FOR RESTORE ###
 if [[ "${ACTION_TYPE}" == "mongo_restore" ]]; then
+  if [[ -z "${AWS_PROFILE}" ]]; then
+    aws s3api head-object --bucket "${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps" --key $WORKSPACE/$DBNAME.tar --no-cli-pager || object_not_exist=true 
+  else
     aws s3api head-object --bucket "${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps" --key $WORKSPACE/$DBNAME.tar --profile $AWS_PROFILE --no-cli-pager || object_not_exist=true 
-    if [[ $object_not_exist && -z "${INIT_DB_ENVIRONMENT}" ]]; then
-        echo "Dump file not found not performing restore"
-        exit 0
-    elif [[ $object_not_exist && -n "${INIT_DB_ENVIRONMENT}" ]]
-    then
-        ACTION_TYPE="mongo_clone"
-    else
-        echo "Starting Restore..." 
-    fi
+  fi
+  if [[ $object_not_exist && -z "${INIT_DB_ENVIRONMENT}" ]]; then
+      echo "Dump file not found not performing restore"
+      exit 0
+  elif [[ $object_not_exist && -n "${INIT_DB_ENVIRONMENT}" ]]
+  then
+      ACTION_TYPE="mongo_clone"
+  else
+      echo "Starting Restore..." 
+  fi
 fi
 
 ### VALIDATE DOCKER IS INTALLED AND RUNNING ###
@@ -137,51 +146,75 @@ fi
 
 ### MONGO DB BACKUP ###
 mongo_backup() {
+  if [[ -z "${AWS_PROFILE}" ]]; then
+    aws s3api head-bucket --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps || bucket_not_exist=true
+  else
     aws s3api head-bucket --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps --profile $AWS_PROFILE || bucket_not_exist=true
-    if [ $bucket_not_exist ]; then
-      echo "Bucket not found, Creating new bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps..."
-      aws s3api create-bucket --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps --profile $AWS_PROFILE --no-cli-pager
-      aws s3api put-bucket-versioning --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps --versioning-configuration Status=Enabled --profile $AWS_PROFILE
+  fi
+  if [ $bucket_not_exist ]; then
+    echo "Bucket not found, Creating new bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps..."
+    if [[ -z "${AWS_PROFILE}" ]]; then
+      aws s3api create-bucket --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps --no-cli-pager
+      aws s3api put-bucket-versioning --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps --versioning-configuration Status=Enabled
+      aws s3api put-public-access-block --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
+    else
+        aws s3api create-bucket --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps --profile $AWS_PROFILE --no-cli-pager
+      aws s3api put-bucket-versioning --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps --versioning-configuration Status=Enabled
       aws s3api put-public-access-block --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true" --profile $AWS_PROFILE
     fi
-    [ ! "$(docker ps | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
-    docker exec -i mongodocker /usr/bin/mongodump --uri "$DBHOST/$DBNAME" -u$DBUSER -p$DBPASSWORD --gzip -o /tmp/$DBNAME
-    docker cp mongodocker:/tmp/$DBNAME /tmp/$DBNAME
-    tar cvf /tmp/$DBNAME.tar -C /tmp/$DBNAME/ .
+  fi
+  [ ! "$(docker ps | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
+  docker exec -i mongodocker /usr/bin/mongodump --uri "$DBHOST/$DBNAME" -u$DBUSER -p$DBPASSWORD --gzip -o /tmp/$DBNAME
+  docker cp mongodocker:/tmp/$DBNAME /tmp/$DBNAME
+  tar cvf /tmp/$DBNAME.tar -C /tmp/$DBNAME/ .
+  if [[ -z "${AWS_PROFILE}" ]]; then
+    aws s3 cp /tmp/$DBNAME.tar s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/
+  else
     aws s3 cp /tmp/$DBNAME.tar s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/ --profile $AWS_PROFILE
-    rm -rf /tmp/$DBNAME.tar /tmp/$DBNAME
-    docker rm -f mongodocker
-  }
+  rm -rf /tmp/$DBNAME.tar /tmp/$DBNAME
+  docker rm -f mongodocker
+}
 
 mongo_clone() {
-      echo "Copying init db..."
-      ### GET SSM PARAMS OF SOURCE DB ###
-      SDBNAME=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-name" --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
-      SDBHOST=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-host" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
-      SDBUSER=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-username" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
-      SDBPASSWORD=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-password" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
-      if [[ -z "$SDBUSER" ]] || [[ -z "$SDBPASSWORD" ]] || [[ -z "$SDBHOST" ]]; then
-          echo "Could not retrieve one or more parameters from SSM!!!"
-          exit 1
-      fi
-      SDBHOST="mongodb+srv://+$SDBHOST"
-      [ ! "$(docker ps | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
-      docker exec -i mongodocker /bin/bash <<EOF 
-      mongodump --uri "$SDBHOST/$SDBNAME" -u$SDBUSER -p$SDBPASSWORD --gzip --archive | mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --nsFrom="$SDBNAME.*" --nsTo="$DBNAME.*" --gzip --archive
+  echo "Copying init db..."
+  ### GET SSM PARAMS OF SOURCE DB ###
+  if [[ -z "${AWS_PROFILE}" ]]; then
+    SDBNAME=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-name" --query 'Parameter.Value' --output text)
+    SDBHOST=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-host" --with-decryption --query 'Parameter.Value' --output text)
+    SDBUSER=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-username" --with-decryption --query 'Parameter.Value' --output text)
+    SDBPASSWORD=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-password" --with-decryption --query 'Parameter.Value' --output text)
+  else
+    SDBNAME=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-name" --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
+    SDBHOST=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-host" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
+    SDBUSER=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-username" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
+    SDBPASSWORD=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-password" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
+  fi
+  if [[ -z "$SDBUSER" ]] || [[ -z "$SDBPASSWORD" ]] || [[ -z "$SDBHOST" ]]; then
+      echo "Could not retrieve one or more parameters from SSM!!!"
+      exit 1
+  fi
+  SDBHOST="mongodb+srv://+$SDBHOST"
+  [ ! "$(docker ps | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
+  docker exec -i mongodocker /bin/bash <<EOF 
+  mongodump --uri "$SDBHOST/$SDBNAME" -u$SDBUSER -p$SDBPASSWORD --gzip --archive | mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --nsFrom="$SDBNAME.*" --nsTo="$DBNAME.*" --gzip --archive
 EOF
-      docker rm -f mongodocker
+  docker rm -f mongodocker
 }
 
 ### MONGO DB RESTORE
 mongo_restore() {
-      aws s3 cp s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/$DBNAME.tar /tmp/ --profile $AWS_PROFILE
-      mkdir -p /tmp/dump
-      tar xvf /tmp/$DBNAME.tar -C /tmp/dump
-      [ ! "$(docker ps | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
-      docker cp /tmp/dump mongodocker:/tmp/dump
-      docker exec -i mongodocker /usr/bin/mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --gzip /tmp/dump
-      rm -rf /tmp/$DBNAME.tar /tmp/dump
-      docker rm -f mongodocker
+  if [[ -z "${AWS_PROFILE}" ]]; then
+    aws s3 cp s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/$DBNAME.tar /tmp/ --profile $AWS_PROFILE
+  else
+    aws s3 cp s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/$DBNAME.tar /tmp/ --profile $AWS_PROFILE
+  fi
+  mkdir -p /tmp/dump
+  tar xvf /tmp/$DBNAME.tar -C /tmp/dump
+  [ ! "$(docker ps | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
+  docker cp /tmp/dump mongodocker:/tmp/dump
+  docker exec -i mongodocker /usr/bin/mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --gzip /tmp/dump
+  rm -rf /tmp/$DBNAME.tar /tmp/dump
+  docker rm -f mongodocker
 }
 
 $ACTION_TYPE
