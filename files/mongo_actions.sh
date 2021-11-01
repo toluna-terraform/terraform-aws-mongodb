@@ -141,6 +141,7 @@ if [[ `docker ps` ]]; then
   echo "pulling mongo docker image..."
   docker pull mongo
 else
+  cat /etc/*-release
   echo "Trying to install docker..."
   if [[ `yum -v` ]]; then
     yum install -y yum-utils
