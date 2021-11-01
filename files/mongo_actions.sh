@@ -154,11 +154,13 @@ else
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
     apt-get update -y
     apt-get -y install docker-ce docker-ce-cli containerd.io
-    systemctl start docker
-  elif [[ `apk -v` ]]; then
-    apk update -y
-    apk add docker -y
-    rc-update add docker boot -y
+    service docker start
+    dockerd
+  elif [[ `apk --v` ]]; then
+    apk update
+    apk add openrc
+    apk add docker
+    rc-update add docker boot
     service docker start
   else
   echo "docker is missing or docker daemon is not running !!!"
