@@ -54,6 +54,7 @@ while [[ $# -gt 0 ]]; do
       then
         AWS_PROFILE="$2"
       else 
+        aws configure set region us-east-1 
         AWS_PROFILE="default"
       fi
       shift # past argument
@@ -90,6 +91,8 @@ done
 : ${WORKSPACE:?Missing -w|--workspace type -h for help}
 : ${ENV_TYPE:?Missing -e|--env_type type -h for help}
 : ${DBHOST:?Missing -dbh|--dbhost type -h for help}
+
+### SET DEFAULT PROFILE ####
 
 ### VALIDATE MONGODB URI FORMAT ###
 if [[ "$DBHOST" =~ ^mongodb\+srv\:\/\/.*$ ]]; then
