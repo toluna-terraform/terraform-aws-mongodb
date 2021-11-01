@@ -141,25 +141,6 @@ if [[ `docker ps` ]]; then
   echo "pulling mongo docker image..."
   docker pull mongo
 else
-  echo "Trying to install docker..."
-  if [[ `yum -v` ]]; then
-    yum install -y yum-utils
-    yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-    yum install -y docker-ce docker-ce-cli containerd.io
-    systemctl start docker
-  elif [[ `apt-get -v` ]]; then
-    apt-get update -y
-    apt-get install -y ca-certificates curl gnupg lsb-release
-    curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-    apt-get update -y
-    apt-get -y install docker-ce docker-ce-cli containerd.io
-    service docker start
-  elif [[ `apk --v` ]]; then
-    su - root
-    apk add --update docker docker-cli openrc 
-    rc-update add docker boot
-  else
   echo "docker is missing or docker daemon is not running !!!"
   exit 127
   fi
