@@ -156,13 +156,8 @@ else
     apt-get -y install docker-ce docker-ce-cli containerd.io
     service docker start
   elif [[ `apk --v` ]]; then
-    su - root
-    apk update
-    apk add openrc
-    apk add docker
+    apk add --update docker docker-cli openrc 
     rc-update add docker boot
-    service docker start
-    dockerd
   else
   echo "docker is missing or docker daemon is not running !!!"
   exit 127
