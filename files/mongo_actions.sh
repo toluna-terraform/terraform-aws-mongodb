@@ -141,12 +141,13 @@ if [[ `docker ps` ]]; then
   echo "pulling mongo docker image..."
   docker pull mongo
 else
+  echo "Trying to install docker..."
   if [[ `yum -v` ]]; then
     yum install -y yum-utils
     yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
     yum install -y docker-ce docker-ce-cli containerd.io
     systemctl start docker
-  elif [[ apt-get -v ]]; then
+  elif [[ `apt-get -v` ]]; then
     apt-get update -y
     apt-get install -y ca-certificates curl gnupg lsb-release
     curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
