@@ -100,7 +100,6 @@ done
 : ${ACTION_TYPE:?Missing -a|--action type -h for help}
 : ${WORKSPACE:?Missing -w|--workspace type -h for help}
 : ${ENV_TYPE:?Missing -e|--env_type type -h for help}
-: ${AWS_PROFILE:?Missing -p|--profile type -h for help}
 : ${DBHOST:?Missing -dbh|--dbhost type -h for help}
 
 ### VALIDATE MONGODB URI FORMAT ###
