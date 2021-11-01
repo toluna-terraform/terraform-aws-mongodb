@@ -51,6 +51,12 @@ while [[ $# -gt 0 ]]; do
       ;;
     -p|--profile)
       AWS_PROFILE="$2"
+      if grep -q "$2" "~/.aws/credentials" || grep -q "$2" "~/.aws/config";
+      then
+        AWS_PROFILE="$2"
+      else 
+        AWS_PROFILE=""
+      fi
       shift # past argument
       shift # past value
       ;;
