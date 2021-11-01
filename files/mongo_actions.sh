@@ -54,6 +54,7 @@ while [[ $# -gt 0 ]]; do
       then
         AWS_PROFILE="$2"
       else 
+        aws configure set region us-east-1
         unset AWS_PROFILE
       fi
       shift # past argument
