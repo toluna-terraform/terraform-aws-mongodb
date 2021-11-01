@@ -141,7 +141,6 @@ if [[ `docker ps` ]]; then
   echo "pulling mongo docker image..."
   docker pull mongo
 else
-  cat /etc/*-release
   echo "Trying to install docker..."
   if [[ `yum -v` ]]; then
     yum install -y yum-utils
@@ -156,6 +155,11 @@ else
     apt-get update -y
     apt-get -y install docker-ce docker-ce-cli containerd.io
     systemctl start docker
+  elif [[ `apk -v` ]]; then
+    apk update -y
+    apk add docker -y
+    rc-update add docker boot -y
+    service docker start
   else
   echo "docker is missing or docker daemon is not running !!!"
   exit 127
