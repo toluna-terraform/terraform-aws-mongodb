@@ -1,1 +1,1 @@
-mongo_actions.sh -a mongo_restore -s ${SERVICE_NAME} -w ${WORKSPACE} -e ${ENV_TYPE} -p ${AWS_PROFILE} -dbh ${DBHOST} -sdb ${INIT_DB_ENVIRONMENT} -sdbp ${INIT_DB_AWS_PROFILE}
+mongo_actions.sh -a mongo_restore -s ${SERVICE_NAME} -w ${WORKSPACE} -e ${ENV_TYPE} -p ${AWS_PROFILE} -dbh ${DBHOST} -sdb ${INIT_DB_ENVIRONMENT}
