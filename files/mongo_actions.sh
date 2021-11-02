@@ -112,6 +112,12 @@ else
     exit 1
 fi
 
+if [[ -z "$LOCAL_RUN" ]]; then
+  echo "Running on remote server"
+else
+  echo "Running localy"
+fi
+
 ### GET TARGET DB CONNECTION DETAILS FROM SSM ###
 if [[ -z "$LOCAL_RUN" ]]; then
   DBNAME=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-name" --query 'Parameter.Value' --output text)
@@ -225,13 +231,13 @@ EOF
 ### MONGO DB RESTORE
 mongo_restore() {
   if [[ -z "$LOCAL_RUN" ]]; then
-    aws s3 cp s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/$DBNAME.tar /tmp/ --profile $AWS_PROFILE
+    aws s3 cp s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/$DBNAME.tar /tmp/ 
     mkdir -p /tmp/dump
     tar xvf /tmp/$DBNAME.tar -C /tmp/dump
     ~/mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --gzip /tmp/dump
     rm -rf /tmp/$DBNAME.tar /tmp/dump
   else
-    aws s3 cp s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/$DBNAME.tar /tmp/
+    aws s3 cp s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/$DBNAME.tar /tmp/ --profile $AWS_PROFILE
     mkdir -p /tmp/dump
     tar xvf /tmp/$DBNAME.tar -C /tmp/dump
     [ ! "$(docker ps | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
