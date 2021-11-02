@@ -10,6 +10,7 @@ unset AWS_PROFILE
 unset DBHOST
 unset DBNAME
 unset INIT_DB_ENVIRONMENT
+unset LOCAL_RUN
 
 usage() {
   cat <<EOM
@@ -55,7 +56,7 @@ while [[ $# -gt 0 ]]; do
         AWS_PROFILE="$2"
       else 
         aws configure set region us-east-1
-        LOCAL_RUN=true
+        LOCAL_RUN="true"
         unset AWS_PROFILE
       fi
       shift # past argument
@@ -103,7 +104,7 @@ else
 fi
 
 ### GET TARGET DB CONNECTION DETAILS FROM SSM ###
-if [[ "$LOCAL_RUN" = false ]]; then
+if [[ -z "$LOCAL_RUN" ]]; then
   DBNAME=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-name" --query 'Parameter.Value' --output text)
   DBUSER=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-username" --with-decryption --query 'Parameter.Value' --output text)
   DBPASSWORD=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-password" --with-decryption --query 'Parameter.Value' --output text)
@@ -119,7 +120,7 @@ fi
 
 ### VALIDATE DUMP EXISTS FOR RESTORE ###
 if [[ "${ACTION_TYPE}" == "mongo_restore" ]]; then
-  if [[ "$LOCAL_RUN" = false ]]; then
+  if [[ -z "$LOCAL_RUN" ]]; then
     aws s3api head-object --bucket "${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps" --key $WORKSPACE/$DBNAME.tar || object_not_exist=true 
   else
     aws s3api head-object --bucket "${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps" --key $WORKSPACE/$DBNAME.tar --profile $AWS_PROFILE --no-cli-pager || object_not_exist=true 
@@ -149,14 +150,14 @@ fi
 
 ### MONGO DB BACKUP ###
 mongo_backup() {
-  if [[ "$LOCAL_RUN" = false ]]; then
+  if [[ -z "$LOCAL_RUN" ]]; then
     aws s3api head-bucket --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps || bucket_not_exist=true
   else
     aws s3api head-bucket --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps --profile $AWS_PROFILE || bucket_not_exist=true
   fi
   if [ $bucket_not_exist ]; then
     echo "Bucket not found, Creating new bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps..."
-    if [[ "$LOCAL_RUN" = false ]]; then
+    if [[ -z "$LOCAL_RUN" ]]; then
       aws s3api create-bucket --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps
       aws s3api put-bucket-versioning --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps --versioning-configuration Status=Enabled
       aws s3api put-public-access-block --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
@@ -166,7 +167,12 @@ mongo_backup() {
       aws s3api put-public-access-block --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true" --profile $AWS_PROFILE
     fi
   fi
-  if [[ "$LOCAL_RUN" = false ]]; then
+  if [[ -z "$LOCAL_RUN" ]]; then
+    ~/mongodump --uri "$DBHOST/$DBNAME" -u$DBUSER -p$DBPASSWORD --gzip -o /tmp/$DBNAME
+    tar cvf /tmp/$DBNAME.tar -C /tmp/$DBNAME/ .
+    aws s3 cp /tmp/$DBNAME.tar s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/
+    rm -rf /tmp/$DBNAME.tar /tmp/$DBNAME
+  else
     [ ! "$(docker ps | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
     docker exec -i mongodocker /usr/bin/mongodump --uri "$DBHOST/$DBNAME" -u$DBUSER -p$DBPASSWORD --gzip -o /tmp/$DBNAME
     docker cp mongodocker:/tmp/$DBNAME /tmp/$DBNAME
@@ -174,11 +180,6 @@ mongo_backup() {
     aws s3 cp /tmp/$DBNAME.tar s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/ --profile $AWS_PROFILE
     rm -rf /tmp/$DBNAME.tar /tmp/$DBNAME
     docker rm -f mongodocker
-  else
-    ~/mongodump --uri "$DBHOST/$DBNAME" -u$DBUSER -p$DBPASSWORD --gzip -o /tmp/$DBNAME
-    tar cvf /tmp/$DBNAME.tar -C /tmp/$DBNAME/ .
-    aws s3 cp /tmp/$DBNAME.tar s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/
-    rm -rf /tmp/$DBNAME.tar /tmp/$DBNAME
   fi
 }
 
@@ -201,20 +202,26 @@ mongo_clone() {
       exit 1
   fi
   SDBHOST="mongodb+srv://+$SDBHOST"
-  if [[ "$LOCAL_RUN" = false ]]; then
-  [ ! "$(docker ps | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
-  docker exec -i mongodocker /bin/bash <<EOF 
-  mongodump --uri "$SDBHOST/$SDBNAME" -u$SDBUSER -p$SDBPASSWORD --gzip --archive | mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --nsFrom="$SDBNAME.*" --nsTo="$DBNAME.*" --gzip --archive
+  if [[ -z "$LOCAL_RUN" ]]; then
+    ~/mongodump --uri "$SDBHOST/$SDBNAME" -u$SDBUSER -p$SDBPASSWORD --gzip --archive | ~/mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --nsFrom="$SDBNAME.*" --nsTo="$DBNAME.*" --gzip --archive
+  else
+    [ ! "$(docker ps | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
+    docker exec -i mongodocker /bin/bash <<EOF 
+    mongodump --uri "$SDBHOST/$SDBNAME" -u$SDBUSER -p$SDBPASSWORD --gzip --archive | mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --nsFrom="$SDBNAME.*" --nsTo="$DBNAME.*" --gzip --archive
 EOF
   docker rm -f mongodocker
-  else
-    ~/mongodump --uri "$SDBHOST/$SDBNAME" -u$SDBUSER -p$SDBPASSWORD --gzip --archive | ~/mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --nsFrom="$SDBNAME.*" --nsTo="$DBNAME.*" --gzip --archive
   fi
 }
 
 ### MONGO DB RESTORE
 mongo_restore() {
-  if [[ "$LOCAL_RUN" = false ]]; then
+  if [[ -z "$LOCAL_RUN" ]]; then
+    aws s3 cp s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/$DBNAME.tar /tmp/ --profile $AWS_PROFILE
+    mkdir -p /tmp/dump
+    tar xvf /tmp/$DBNAME.tar -C /tmp/dump
+    ~/mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --gzip /tmp/dump
+    rm -rf /tmp/$DBNAME.tar /tmp/dump
+  else
     aws s3 cp s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/$DBNAME.tar /tmp/
     mkdir -p /tmp/dump
     tar xvf /tmp/$DBNAME.tar -C /tmp/dump
@@ -223,12 +230,6 @@ mongo_restore() {
     docker exec -i mongodocker /usr/bin/mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --gzip /tmp/dump
     rm -rf /tmp/$DBNAME.tar /tmp/dump
     docker rm -f mongodocker
-  else
-    aws s3 cp s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/$DBNAME.tar /tmp/ --profile $AWS_PROFILE
-    mkdir -p /tmp/dump
-    tar xvf /tmp/$DBNAME.tar -C /tmp/dump
-    ~/mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --gzip /tmp/dump
-    rm -rf /tmp/$DBNAME.tar /tmp/dump
   fi
 }
 
