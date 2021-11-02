@@ -15,13 +15,13 @@ unset LOCAL_RUN
 usage() {
   cat <<EOM
     Usage:
-    mongo_actions.sh -s|--service_name <SERVICE_NAME> -a|--action <mongo_backup/mongo_restore> -w|--workspace <Terraform workspace> -e|--env_type <prod/non-prod> -p|--profile <AWS_PROFILE> -dbh|--dbhost <Mongo DB URI> -dbs|--source_db <source workspace to copy DB from on restore(optional)>
+    mongo_actions.sh -s|--service_name <SERVICE_NAME> -a|--action <mongo_backup/mongo_restore> -w|--workspace <Terraform workspace> -e|--env_type <prod/non-prod> -p|--profile <AWS_PROFILE> -dbh|--dbhost <Mongo DB URI> -dbs|--source_db <source workspace to copy DB from on restore(optional)> -l|locaL [true||false] is script runing from local or remote system
     I.E. for backup 
-    mongo_actions.sh --service_name myService --action mongo_backup --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string
+    mongo_actions.sh --service_name myService --action mongo_backup --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string -local true
     I.E. for restore
-    mongo_actions.sh --service_name myService --action mongo_restore --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string --source_db test-data
+    mongo_actions.sh --service_name myService --action mongo_restore --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string --source_db test-data -local true
     I.E. for clone
-    mongo_actions.sh --service_name myService --action mongo_restore --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string --source_db test-data
+    mongo_actions.sh --service_name myService --action mongo_restore --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string --source_db test-data -local true
 EOM
     exit 1
 }
@@ -56,7 +56,6 @@ while [[ $# -gt 0 ]]; do
         AWS_PROFILE="$2"
       else 
         aws configure set region us-east-1
-        LOCAL_RUN="true"
         unset AWS_PROFILE
       fi
       shift # past argument
@@ -76,6 +75,16 @@ while [[ $# -gt 0 ]]; do
         fi
         shift # past argument
         shift # past value
+      ;;
+    -l|--local)
+    if [[ "$2" == "true" ]];
+    then 
+        LOCAL_RUN="$2"
+    else 
+        unset LOCAL_RUN
+    fi
+    shift # past argument
+    shift # past value
       ;;
     -h|--help)
         usage
