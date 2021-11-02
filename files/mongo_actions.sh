@@ -143,7 +143,7 @@ if [[ `docker ps` ]]; then
   echo "Preparing to ${ACTION_TYPE}..."
   echo "pulling mongo docker image..."
   docker pull mongo
-elif [[ `mongorestore --version` ]] || [[ `mongodump --version` ]]; then
+elif [[ `~/mongorestore --version` ]] || [[ `~/mongodump --version` ]]; then
   echo "Found mongo-utils"
 else
   echo "Cannot run mongo actions !!!"
@@ -179,7 +179,7 @@ mongo_backup() {
     rm -rf /tmp/$DBNAME.tar /tmp/$DBNAME
     docker rm -f mongodocker
   else
-    mongodump --uri "$DBHOST/$DBNAME" -u$DBUSER -p$DBPASSWORD --gzip -o /tmp/$DBNAME
+    ~/mongodump --uri "$DBHOST/$DBNAME" -u$DBUSER -p$DBPASSWORD --gzip -o /tmp/$DBNAME
     tar cvf /tmp/$DBNAME.tar -C /tmp/$DBNAME/ .
     aws s3 cp /tmp/$DBNAME.tar s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/
     rm -rf /tmp/$DBNAME.tar /tmp/$DBNAME
@@ -212,7 +212,7 @@ mongo_clone() {
 EOF
   docker rm -f mongodocker
   else
-    mongodump --uri "$SDBHOST/$SDBNAME" -u$SDBUSER -p$SDBPASSWORD --gzip --archive | mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --nsFrom="$SDBNAME.*" --nsTo="$DBNAME.*" --gzip --archive
+    ~/mongodump --uri "$SDBHOST/$SDBNAME" -u$SDBUSER -p$SDBPASSWORD --gzip --archive | ~/mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --nsFrom="$SDBNAME.*" --nsTo="$DBNAME.*" --gzip --archive
   fi
 }
 
@@ -231,7 +231,7 @@ mongo_restore() {
     aws s3 cp s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/$DBNAME.tar /tmp/ --profile $AWS_PROFILE
     mkdir -p /tmp/dump
     tar xvf /tmp/$DBNAME.tar -C /tmp/dump
-    mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --gzip /tmp/dump
+    ~/mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --gzip /tmp/dump
     rm -rf /tmp/$DBNAME.tar /tmp/dump
   fi
 }
