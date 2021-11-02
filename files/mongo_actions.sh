@@ -123,6 +123,7 @@ if [[ -z "$LOCAL_RUN" ]]; then
   DBNAME=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-name" --query 'Parameter.Value' --output text)
   DBUSER=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-username" --with-decryption --query 'Parameter.Value' --output text)
   DBPASSWORD=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-password" --with-decryption --query 'Parameter.Value' --output text)
+  DBHOST="${DBHOST/mongodb+srv\:\/\//"mongodb+srv://$DBUSER:$DBPASSWORD@"}"
 else
   DBNAME=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-name" --query 'Parameter.Value' --profile $AWS_PROFILE --output text)
   DBUSER=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-username" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE --output text)
@@ -183,7 +184,7 @@ mongo_backup() {
     fi
   fi
   if [[ -z "$LOCAL_RUN" ]]; then
-    ~/mongodump --uri "$DBHOST/$DBNAME" -u$DBUSER -p$DBPASSWORD --gzip -o /tmp/$DBNAME
+    ~/mongodump --uri "$DBHOST/$DBNAME" --gzip -o /tmp/$DBNAME
     tar cvf /tmp/$DBNAME.tar -C /tmp/$DBNAME/ .
     aws s3 cp /tmp/$DBNAME.tar s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/
     rm -rf /tmp/$DBNAME.tar /tmp/$DBNAME
@@ -216,10 +217,11 @@ mongo_clone() {
       echo "Could not retrieve one or more parameters from SSM!!!"
       exit 1
   fi
-  SDBHOST="mongodb+srv://+$SDBHOST"
   if [[ -z "$LOCAL_RUN" ]]; then
-    ~/mongodump --uri "$SDBHOST/$SDBNAME" -u$SDBUSER -p$SDBPASSWORD --gzip --archive | ~/mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --nsFrom="$SDBNAME.*" --nsTo="$DBNAME.*" --gzip --archive
+    SDBHOST="mongodb+srv://$DBUSER:$DBPASSWORD@$SDBHOST"
+    ~/mongodump --uri "$SDBHOST/$SDBNAME" --gzip --archive | ~/mongorestore --uri "$DBHOST" --nsFrom="$SDBNAME.*" --nsTo="$DBNAME.*" --gzip --archive
   else
+    SDBHOST="mongodb+srv://$SDBHOST"
     [ ! "$(docker ps | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
     docker exec -i mongodocker /bin/bash <<EOF 
     mongodump --uri "$SDBHOST/$SDBNAME" -u$SDBUSER -p$SDBPASSWORD --gzip --archive | mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --nsFrom="$SDBNAME.*" --nsTo="$DBNAME.*" --gzip --archive
@@ -234,7 +236,7 @@ mongo_restore() {
     aws s3 cp s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/$DBNAME.tar /tmp/ 
     mkdir -p /tmp/dump
     tar xvf /tmp/$DBNAME.tar -C /tmp/dump
-    ~/mongorestore --uri "$DBHOST" -u$DBUSER -p$DBPASSWORD --gzip /tmp/dump
+    ~/mongorestore --uri "$DBHOST" --gzip /tmp/dump
     rm -rf /tmp/$DBNAME.tar /tmp/dump
   else
     aws s3 cp s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/$DBNAME.tar /tmp/ --profile $AWS_PROFILE
