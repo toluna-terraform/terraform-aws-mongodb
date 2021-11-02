@@ -125,7 +125,6 @@ if [[ -z "$LOCAL_RUN" ]]; then
   DBPASSWORD=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-password" --with-decryption --query 'Parameter.Value' --output text)
   TMPDBHOST=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-host" --with-decryption --query 'Parameter.Value' --output text)
   DBHOST="mongodb+srv://$DBUSER:$DBPASSWORD@$TMPDBHOST"
-  echo "$DBHOST"
 else
   DBNAME=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-name" --query 'Parameter.Value' --profile $AWS_PROFILE --output text)
   DBUSER=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-username" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE --output text)
@@ -238,6 +237,7 @@ mongo_restore() {
     aws s3 cp s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/$DBNAME.tar /tmp/ 
     mkdir -p /tmp/dump
     tar xvf /tmp/$DBNAME.tar -C /tmp/dump
+    echo "Restoring ~/mongorestore --uri '$DBHOST' --gzip /tmp/dump"
     ~/mongorestore --uri "$DBHOST" --gzip /tmp/dump
     rm -rf /tmp/$DBNAME.tar /tmp/dump
   else
