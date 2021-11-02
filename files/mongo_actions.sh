@@ -55,6 +55,7 @@ while [[ $# -gt 0 ]]; do
         AWS_PROFILE="$2"
       else 
         aws configure set region us-east-1
+        LOCAL_RUN=true
         unset AWS_PROFILE
       fi
       shift # past argument
@@ -99,10 +100,6 @@ if [[ "$DBHOST" =~ ^mongodb\+srv\:\/\/.*$ ]]; then
 else
     echo "Please use a valid mongoDB uri mongodb+srv://myMongo-server"
     exit 1
-fi
-
-if [[ -z "$LOCAL_RUN"  ]]; then
-  LOCAL_RUN=false
 fi
 
 ### GET TARGET DB CONNECTION DETAILS FROM SSM ###
