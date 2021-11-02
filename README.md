@@ -62,10 +62,10 @@ module "mongodb" {
 To run the mongorestore/mongodump script mnually (mongo_actions.sh): 
 - cd to the path containing your environment.json (see examples)
 - mongo_actions.sh -s|--service_name <SERVICE_NAME> -a|--action <mongo_backup/mongo_restore> -w|--workspace <Terraform workspace> -e|--env_type <prod/non-prod> -p|--profile <AWS_PROFILE> -dbh|--dbhost <Mongo DB URI> -dbs|--source_db <source workspace to copy DB from on restore(optional)>
-    - I.E. for backup 
-    - mongo_actions.sh --service_name myService --action mongo_backup --workspace my-data --env_type non-prod --profile - my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string
+    - I.E. for backup -l|local is the script running from your local computer or a remote system (infra manager)
+    - mongo_actions.sh --service_name myService --action mongo_backup --workspace my-data --env_type non-prod --profile - my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string -l|local is the script running from your local computer or a remote system (infra manager)
     - I.E. for restore
-    - mongo_actions.sh --service_name myService --action mongo_restore --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string --source_db test-data --source-db-profile source-test-profile
+    - mongo_actions.sh --service_name myService --action mongo_restore --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string --source_db test-data  -l|local is the script running from your local computer or a remote system (infra manager)
 
 ## Toggles
 #### Backup, Restore and Initial DB flags:
@@ -73,7 +73,6 @@ To run the mongorestore/mongodump script mnually (mongo_actions.sh):
 backup_on_destroy     = boolean (true/false) default = true
 restore_on_create     = boolean (true/false) default = true
 init_db_environment   = string the name of the source environment to copy db from
-init_db_aws_profile   = string the name of the source environment aws profile to use
 ```
 
 if restore_on_create = true the following flow is used:
