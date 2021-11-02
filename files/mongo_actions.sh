@@ -102,7 +102,7 @@ else
 fi
 
 if [[ -z "$LOCAL_RUN"  ]]; then
-  LOCAL_RUN = false
+  LOCAL_RUN=false
 fi
 
 ### GET TARGET DB CONNECTION DETAILS FROM SSM ###
