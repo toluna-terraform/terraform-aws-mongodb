@@ -149,14 +149,14 @@ fi
 
 ### MONGO DB BACKUP ###
 mongo_backup() {
-  if [[ "$LOCAL_RUN" = false ]] then
+  if [[ "$LOCAL_RUN" = false ]]; then
     aws s3api head-bucket --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps || bucket_not_exist=true
   else
     aws s3api head-bucket --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps --profile $AWS_PROFILE || bucket_not_exist=true
   fi
   if [ $bucket_not_exist ]; then
     echo "Bucket not found, Creating new bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps..."
-    if [[ "$LOCAL_RUN" = false ]] then
+    if [[ "$LOCAL_RUN" = false ]]; then
       aws s3api create-bucket --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps
       aws s3api put-bucket-versioning --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps --versioning-configuration Status=Enabled
       aws s3api put-public-access-block --bucket ${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
