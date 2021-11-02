@@ -125,6 +125,7 @@ if [[ -z "$LOCAL_RUN" ]]; then
   DBPASSWORD=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-password" --with-decryption --query 'Parameter.Value' --output text)
   TMPDBHOST=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-host" --with-decryption --query 'Parameter.Value' --output text)
   DBHOST="mongodb+srv://$DBUSER:$DBPASSWORD@$TMPDBHOST"
+  echo "$DBHOST"
 else
   DBNAME=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-name" --query 'Parameter.Value' --profile $AWS_PROFILE --output text)
   DBUSER=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-username" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE --output text)
