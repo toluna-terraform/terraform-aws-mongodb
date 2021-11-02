@@ -92,12 +92,6 @@ done
 : ${ENV_TYPE:?Missing -e|--env_type type -h for help}
 : ${DBHOST:?Missing -dbh|--dbhost type -h for help}
 
-### CHECK IF RUNNING LOCALY OR FROM ENV0 ###
-if [[ -z "${ENV0_PROJECT_ID}" ]]; then
-  LOCAL_RUN=true
-else 
-  LOCAL_RUN=false
-fi
 
 ### VALIDATE MONGODB URI FORMAT ###
 if [[ "$DBHOST" =~ ^mongodb\+srv\:\/\/.*$ ]]; then
@@ -107,15 +101,19 @@ else
     exit 1
 fi
 
+if [[ -z "$LOCAL_RUN"  ]]; then
+  LOCAL_RUN = false
+fi
+
 ### GET TARGET DB CONNECTION DETAILS FROM SSM ###
 if [[ "$LOCAL_RUN" = false ]]; then
-DBNAME=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-name" --query 'Parameter.Value' --output text)
-DBUSER=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-username" --with-decryption --query 'Parameter.Value' --output text)
-DBPASSWORD=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-password" --with-decryption --query 'Parameter.Value' --output text)
+  DBNAME=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-name" --query 'Parameter.Value' --output text)
+  DBUSER=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-username" --with-decryption --query 'Parameter.Value' --output text)
+  DBPASSWORD=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-password" --with-decryption --query 'Parameter.Value' --output text)
 else
-DBNAME=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-name" --query 'Parameter.Value' --profile $AWS_PROFILE --output text)
-DBUSER=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-username" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE --output text)
-DBPASSWORD=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-password" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE --output text)
+  DBNAME=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-name" --query 'Parameter.Value' --profile $AWS_PROFILE --output text)
+  DBUSER=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-username" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE --output text)
+  DBPASSWORD=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-password" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE --output text)
 fi
 if [[ -z "$DBNAME"  ]] || [[ -z "$DBUSER" ]] || [[ -z "$DBPASSWORD" ]]; then
         echo "Could not retrieve one or more parameters from SSM!!!"
@@ -145,10 +143,10 @@ if [[ `docker ps` ]]; then
   echo "Preparing to ${ACTION_TYPE}..."
   echo "pulling mongo docker image..."
   docker pull mongo
-elif [[ "$LOCAL_RUN" = false ]]; then
-  apk add mongodb-tools
+elif [[ `mongorestore --version` ]] || [[ `mongodump --version` ]]; then
+  echo "Found mongo-utils"
 else
-  echo "docker is missing or docker daemon is not running !!!"
+  echo "Cannot run mongo actions !!!"
   exit 127
   fi
 fi
