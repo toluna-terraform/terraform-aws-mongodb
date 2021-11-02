@@ -148,7 +148,6 @@ elif [[ `~/mongorestore --version` ]] || [[ `~/mongodump --version` ]]; then
 else
   echo "Cannot run mongo actions !!!"
   exit 127
-  fi
 fi
 
 ### MONGO DB BACKUP ###
