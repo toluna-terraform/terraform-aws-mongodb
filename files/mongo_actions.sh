@@ -237,7 +237,6 @@ mongo_restore() {
     aws s3 cp s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/$DBNAME.tar /tmp/ 
     mkdir -p /tmp/dump
     tar xvf /tmp/$DBNAME.tar -C /tmp/dump
-    echo "Restoring ~/mongorestore --uri '$DBHOST' --gzip /tmp/dump"
     ~/mongorestore --uri $DBHOST --gzip /tmp/dump
     rm -rf /tmp/$DBNAME.tar /tmp/dump
   else
