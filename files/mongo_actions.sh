@@ -9,19 +9,25 @@ unset ENV_TYPE
 unset AWS_PROFILE
 unset DBHOST
 unset DBNAME
+unset DBUSER
+unset DBPASSWORD
 unset INIT_DB_ENVIRONMENT
+unset SDBUSER
+unset SDBPASSWORD
+unset SDBHOST
+unset SDBNAME
 unset LOCAL_RUN
 
 usage() {
   cat <<EOM
     Usage:
-    mongo_actions.sh -s|--service_name <SERVICE_NAME> -a|--action <mongo_backup/mongo_restore> -w|--workspace <Terraform workspace> -e|--env_type <prod/non-prod> -p|--profile <AWS_PROFILE> -dbh|--dbhost <Mongo DB URI> -dbs|--source_db <source workspace to copy DB from on restore(optional)> -l|locaL [true||false] is script runing from local or remote system
+    mongo_actions.sh -s|--service_name <SERVICE_NAME> -a|--action <mongo_backup/mongo_restore> -w|--workspace <Terraform workspace> -e|--env_type <prod/non-prod> -p|--profile <AWS_PROFILE> -dbh|--dbhost <Mongo DB URI> -dbu|--dbuser db username -dbp|--dbpass db password -dbs|--source_db <source workspace to copy DB from on restore(optional)> -sdbu|--sdbuser source db user -sdbp|--sdbpass source db password -l|locaL [true||false] is script runing from local or remote system
     I.E. for backup 
-    mongo_actions.sh --service_name myService --action mongo_backup --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string -local true
+    mongo_actions.sh --service_name myService --action mongo_backup --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string --dbuser myUser --dbpass myPassword -local true
     I.E. for restore
-    mongo_actions.sh --service_name myService --action mongo_restore --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string --source_db test-data -local true
+    mongo_actions.sh --service_name myService --action mongo_restore --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string  --dbuser myUser --dbpass myPassword --source_db test-data --sdbh sourceDBHOST --sdbuser sourceUser --sdbpass sourcePassword -local true
     I.E. for clone
-    mongo_actions.sh --service_name myService --action mongo_restore --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string --source_db test-data -local true
+    mongo_actions.sh --service_name myService --action mongo_restore --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string  --dbuser myUser --dbpass myPassword --source_db test-data --sdbh sourceDBHOST --sdbuser sourceUser --sdbpass sourcePassword -local true
 EOM
     exit 1
 }
@@ -66,25 +72,53 @@ while [[ $# -gt 0 ]]; do
       shift # past argument
       shift # past value
       ;;
+    -dbu|--dbuser)
+      DBUSER="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    -dbp|--dbpass)
+      DBPASSWORD="$2"
+      shift # past argument
+      shift # past value
+      ;;
     -sdb|--source_db)
-        if [[ "$2" == "NULL" ]];
-        then 
-            unset INIT_DB_ENVIRONMENT
-        else 
-            INIT_DB_ENVIRONMENT="$2"
-        fi
-        shift # past argument
-        shift # past value
+      if [[ "$2" == "NULL" ]];
+      then 
+          unset INIT_DB_ENVIRONMENT
+      else 
+          INIT_DB_ENVIRONMENT="$2"
+          : ${SDBHOST:?Missing -sdbh|--sdbhost, when using source db you must have a source db host type -h for help}
+          : ${SDBUSER:?Missing -sdbu|--sdbuser, when using source db you must have a source db user type -h for help}
+          : ${SDBPASSWORD:?Missing -sdbp|--sdbpass, when using source db you must have a source db password type -h for help}
+      fi
+      shift # past argument
+      shift # past value
+      ;;
+    -sdbh|--sdbhost)
+      SDBHOST="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    -sdbu|--sdbuser)
+      SDBUSER="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    -sdbp|--sdbpass)
+      SDBPASSWORD="$2"
+      shift # past argument
+      shift # past value
       ;;
     -l|--local)
-    if [[ "$2" == "true" ]];
-    then 
-        LOCAL_RUN="$2"
-    else 
-        unset LOCAL_RUN
-    fi
-    shift # past argument
-    shift # past value
+      if [[ "$2" == "true" ]];
+      then 
+          LOCAL_RUN="$2"
+      else 
+          unset LOCAL_RUN
+      fi
+      shift # past argument
+      shift # past value
       ;;
     -h|--help)
         usage
@@ -102,7 +136,8 @@ done
 : ${WORKSPACE:?Missing -w|--workspace type -h for help}
 : ${ENV_TYPE:?Missing -e|--env_type type -h for help}
 : ${DBHOST:?Missing -dbh|--dbhost type -h for help}
-
+: ${DBUSER:?Missing -dbh|--dbhost type -h for help}
+: ${DBPASSWORD:?Missing -dbh|--dbhost type -h for help}
 
 ### VALIDATE MONGODB URI FORMAT ###
 if [[ "$DBHOST" =~ ^mongodb\+srv\:\/\/.*$ ]]; then
@@ -120,19 +155,7 @@ fi
 
 ### GET TARGET DB CONNECTION DETAILS FROM SSM ###
 if [[ -z "$LOCAL_RUN" ]]; then
-  DBNAME=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-name" --query 'Parameter.Value' --output text)
-  DBUSER=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-username" --with-decryption --query 'Parameter.Value' --output text)
-  DBPASSWORD=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-password" --with-decryption --query 'Parameter.Value' --output text)
-  TMPDBHOST=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-host" --with-decryption --query 'Parameter.Value' --output text)
   DBHOST="mongodb+srv://$DBUSER:$DBPASSWORD@$TMPDBHOST"
-else
-  DBNAME=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-name" --query 'Parameter.Value' --profile $AWS_PROFILE --output text)
-  DBUSER=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-username" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE --output text)
-  DBPASSWORD=$(aws ssm get-parameter --name "/infra/$WORKSPACE/db-password" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE --output text)
-fi
-if [[ -z "$DBNAME"  ]] || [[ -z "$DBUSER" ]] || [[ -z "$DBPASSWORD" ]]; then
-        echo "Could not retrieve one or more parameters from SSM!!!"
-        exit 1
 fi
 
 ### VALIDATE DUMP EXISTS FOR RESTORE ###
@@ -202,22 +225,6 @@ mongo_backup() {
 
 mongo_clone() {
   echo "Copying init db..."
-  ### GET SSM PARAMS OF SOURCE DB ###
-  if [[ -z "${AWS_PROFILE}" ]]; then
-    SDBNAME=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-name" --query 'Parameter.Value' --output text)
-    SDBHOST=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-host" --with-decryption --query 'Parameter.Value' --output text)
-    SDBUSER=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-username" --with-decryption --query 'Parameter.Value' --output text)
-    SDBPASSWORD=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-password" --with-decryption --query 'Parameter.Value' --output text)
-  else
-    SDBNAME=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-name" --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
-    SDBHOST=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-host" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
-    SDBUSER=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-username" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
-    SDBPASSWORD=$(aws ssm get-parameter --name "/infra/$INIT_DB_ENVIRONMENT/db-password" --with-decryption --query 'Parameter.Value' --profile $AWS_PROFILE  --output text)
-  fi
-  if [[ -z "$SDBUSER" ]] || [[ -z "$SDBPASSWORD" ]] || [[ -z "$SDBHOST" ]]; then
-      echo "Could not retrieve one or more parameters from SSM!!!"
-      exit 1
-  fi
   if [[ -z "$LOCAL_RUN" ]]; then
     SDBHOST="mongodb+srv://$DBUSER:$DBPASSWORD@$SDBHOST"
     ~/mongodump --uri "$SDBHOST/$SDBNAME" --gzip --archive | ~/mongorestore --uri $DBHOST --nsFrom="$SDBNAME.*" --nsTo="$DBNAME.*" --gzip --archive

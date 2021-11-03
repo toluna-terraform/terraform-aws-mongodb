@@ -85,3 +85,7 @@ variable "init_db_aws_profile" {
   default = "NULL"
   description = "Source envirnment aws profile to restore db from"
 } 
+
+variable "allowed_envs" {
+  description = "The app environment allowed for this db"
+}

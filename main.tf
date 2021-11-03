@@ -17,7 +17,8 @@ resource "mongodbatlas_cluster" "main" {
 }
 
 resource "aws_ssm_parameter" "db_hostname" {
-  name        = "/infra/${var.environment}/db-host"
+  for_each =  toset(var.allowed_envs)
+  name        = "/infra/${each.key}/db-host"
   description = "terraform_db_hostname"
   type        = "SecureString"
   value       = trimprefix("${mongodbatlas_cluster.main.srv_address}","mongodb+srv://")
@@ -40,7 +41,7 @@ resource "null_resource" "db_backup" {
     command    = "${path.module}/files/${self.triggers.backup_file}"
   }
   depends_on = [
-    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, aws_ssm_parameter.db_name,data.template_file.mongo_backup
+    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, data.template_file.mongo_backup
   ]
 }
 
@@ -53,6 +54,6 @@ resource "null_resource" "db_restore" {
     command = "${path.module}/files/${data.template_file.mongo_restore.rendered}"
   }
   depends_on = [
-    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, aws_ssm_parameter.db_name,data.template_file.mongo_restore
+    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, data.template_file.mongo_restore
   ]
 }
