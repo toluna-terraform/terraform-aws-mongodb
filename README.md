@@ -46,6 +46,7 @@ module "mongodb" {
   backup_on_destroy           = true
   restore_on_create           = true
   db_name                     = local.env_vars.db_name
+  allowed_envs                = local.env_vars.allowed_envs
   init_db_environment         = local.init_db_environment
   init_db_aws_profile         = local.init_db_aws_profile
   ip_whitelist                = local.ip_whitelist
@@ -61,11 +62,13 @@ module "mongodb" {
 
 To run the mongorestore/mongodump script mnually (mongo_actions.sh): 
 - cd to the path containing your environment.json (see examples)
-- mongo_actions.sh -s|--service_name <SERVICE_NAME> -a|--action <mongo_backup/mongo_restore> -w|--workspace <Terraform workspace> -e|--env_type <prod/non-prod> -p|--profile <AWS_PROFILE> -dbh|--dbhost <Mongo DB URI> -dbs|--source_db <source workspace to copy DB from on restore(optional)>
-    - I.E. for backup -l|local is the script running from your local computer or a remote system (infra manager)
-    - mongo_actions.sh --service_name myService --action mongo_backup --workspace my-data --env_type non-prod --profile - my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string -l|local is the script running from your local computer or a remote system (infra manager)
-    - I.E. for restore
-    - mongo_actions.sh --service_name myService --action mongo_restore --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string --source_db test-data  -l|local is the script running from your local computer or a remote system (infra manager)
+- mongo_actions.sh -s|--service_name <SERVICE_NAME> -a|--action <mongo_backup/mongo_restore> -w|--workspace <Terraform workspace> -e|--env_type <prod/non-prod> -p|--profile <AWS_PROFILE> -dbh|--dbhost <Mongo DB URI> -dbu|--dbuser db username -dbp|--dbpass db password -dbs|--source_db <source workspace to copy DB from on restore(optional)> -sdbu|--sdbuser source db user -sdbp|--sdbpass source db password -l|locaL [true||false] is script runing from local or remote system
+    I.E. for backup 
+    mongo_actions.sh --service_name myService --action mongo_backup --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string --dbuser myUser --dbpass myPassword -local true
+    I.E. for restore
+    mongo_actions.sh --service_name myService --action mongo_restore --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string  --dbuser myUser --dbpass myPassword --source_db test-data --sdbh sourceDBHOST --sdbuser sourceUser --sdbpass sourcePassword -local true
+    I.E. for clone
+    mongo_actions.sh --service_name myService --action mongo_restore --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string  --dbuser myUser --dbpass myPassword --source_db test-data --sdbh sourceDBHOST --sdbuser sourceUser --sdbpass sourcePassword -local true
 
 ## Toggles
 #### Backup, Restore and Initial DB flags:

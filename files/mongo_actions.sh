@@ -16,7 +16,6 @@ unset SDBUSER
 unset SDBPASSWORD
 unset SDBHOST
 unset SDBNAME
-unset LOCAL_RUN
 
 usage() {
   cat <<EOM
@@ -37,6 +36,7 @@ while [[ $# -gt 0 ]]; do
   case $key in
     -s|--service_name)
       SERVICE_NAME="$2"
+      DBNAME="$2"
       shift # past argument
       shift # past value
       ;;
@@ -57,13 +57,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     -p|--profile)
       AWS_PROFILE="$2"
-      if [[ -f "~/.aws/credentilas" ]] || [[ -f "~/.aws/config" ]];
-      then
-        AWS_PROFILE="$2"
-      else 
-        aws configure set region us-east-1
-        unset AWS_PROFILE
-      fi
       shift # past argument
       shift # past value
       ;;
@@ -88,9 +81,6 @@ while [[ $# -gt 0 ]]; do
           unset INIT_DB_ENVIRONMENT
       else 
           INIT_DB_ENVIRONMENT="$2"
-          : ${SDBHOST:?Missing -sdbh|--sdbhost, when using source db you must have a source db host type -h for help}
-          : ${SDBUSER:?Missing -sdbu|--sdbuser, when using source db you must have a source db user type -h for help}
-          : ${SDBPASSWORD:?Missing -sdbp|--sdbpass, when using source db you must have a source db password type -h for help}
       fi
       shift # past argument
       shift # past value
@@ -114,8 +104,6 @@ while [[ $# -gt 0 ]]; do
       if [[ "$2" == "true" ]];
       then 
           LOCAL_RUN="$2"
-      else 
-          unset LOCAL_RUN
       fi
       shift # past argument
       shift # past value
@@ -136,10 +124,21 @@ done
 : ${WORKSPACE:?Missing -w|--workspace type -h for help}
 : ${ENV_TYPE:?Missing -e|--env_type type -h for help}
 : ${DBHOST:?Missing -dbh|--dbhost type -h for help}
-: ${DBUSER:?Missing -dbh|--dbhost type -h for help}
-: ${DBPASSWORD:?Missing -dbh|--dbhost type -h for help}
+: ${DBUSER:?Missing -dbu|--dbuser type -h for help}
+: ${DBPASSWORD:?Missing -dbp|--dbpass type -h for help}
 
+if [[ ! -z "$INIT_DB_ENVIRONMENT" ]]; then
+: ${SDBHOST:?Missing -sdbh|--sdbhost, when using source db you must have a source db host type -h for help}
+: ${SDBUSER:?Missing -sdbu|--sdbuser, when using source db you must have a source db user type -h for help}
+: ${SDBPASSWORD:?Missing -sdbp|--sdbpass, when using source db you must have a source db password type -h for help}
+fi
 ### VALIDATE MONGODB URI FORMAT ###
+if [[ -z "$LOCAL_RUN" ]]; then
+  DBHOST="mongodb+srv://$DBUSER:$DBPASSWORD@$DBHOST"
+  unset AWS_PROFILE
+else
+  DBHOST="mongodb+srv://$DBHOST"
+fi
 if [[ "$DBHOST" =~ ^mongodb\+srv\:\/\/.*$ ]]; then
     echo "Validating mongoDB uri"
 else
@@ -151,11 +150,6 @@ if [[ -z "$LOCAL_RUN" ]]; then
   echo "Running on remote server"
 else
   echo "Running localy"
-fi
-
-### GET TARGET DB CONNECTION DETAILS FROM SSM ###
-if [[ -z "$LOCAL_RUN" ]]; then
-  DBHOST="mongodb+srv://$DBUSER:$DBPASSWORD@$TMPDBHOST"
 fi
 
 ### VALIDATE DUMP EXISTS FOR RESTORE ###

@@ -27,18 +27,27 @@ resource "aws_ssm_parameter" "db_hostname" {
     mongodbatlas_cluster.main
   ]
 }
+variable "hide_sensitive" {
+  type      = string
+  default   = "hide_sensitive"
+  sensitive = true
+}
 
 resource "null_resource" "db_backup" {
   count = var.backup_on_destroy ? 1 : 0
   triggers = {
     address = "${mongodbatlas_cluster.main.srv_address}",
-    backup_file = "${data.template_file.mongo_backup.rendered}"
+    backup_file = "${data.template_file.mongo_backup.rendered}",
+    hide_sensitive = "${var.hide_sensitive}"
   }
 
   provisioner "local-exec" {
     when       = destroy
     on_failure = fail
     command    = "${path.module}/files/${self.triggers.backup_file}"
+    environment = {
+      hide_command = lookup(self.triggers, "hide_sensitive", "")
+    }
   }
   depends_on = [
     mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, data.template_file.mongo_backup
@@ -52,6 +61,9 @@ resource "null_resource" "db_restore" {
   }
   provisioner "local-exec" {
     command = "${path.module}/files/${data.template_file.mongo_restore.rendered}"
+    environment = {
+      hide_sensitive = var.hide_sensitive
+    }
   }
   depends_on = [
     mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, data.template_file.mongo_restore
