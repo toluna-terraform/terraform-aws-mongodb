@@ -20,13 +20,13 @@ unset SDBNAME
 usage() {
   cat <<EOM
     Usage:
-    mongo_actions.sh -s|--service_name <SERVICE_NAME> -a|--action <mongo_backup/mongo_restore> -w|--workspace <Terraform workspace> -e|--env_type <prod/non-prod> -p|--profile <AWS_PROFILE> -dbh|--dbhost <Mongo DB URI> -dbu|--dbuser db username -dbp|--dbpass db password -dbs|--source_db <source workspace to copy DB from on restore(optional)> -sdbu|--sdbuser source db user -sdbp|--sdbpass source db password -l|locaL [true||false] is script runing from local or remote system
+    mongo_actions.sh -s|--service_name <SERVICE_NAME> -a|--action <mongo_backup/mongo_restore> -w|--workspace <Terraform workspace> -e|--env_type <prod/non-prod> -p|--profile <AWS_PROFILE> -dbh|--dbhost <Mongo DB URI> -dbu|--dbuser db username -dbp|--dbpass db password -dbs|--source_db <source workspace to copy DB from on restore(optional)> -sdbu|--sdbuser source db user -sdbp|--sdbpass source db password
     I.E. for backup 
-    mongo_actions.sh --service_name myService --action mongo_backup --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string --dbuser myUser --dbpass myPassword -local true
+    mongo_actions.sh --service_name myService --action mongo_backup --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string --dbuser myUser --dbpass myPassword
     I.E. for restore
-    mongo_actions.sh --service_name myService --action mongo_restore --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string  --dbuser myUser --dbpass myPassword --source_db test-data --sdbh sourceDBHOST --sdbuser sourceUser --sdbpass sourcePassword -local true
+    mongo_actions.sh --service_name myService --action mongo_restore --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string  --dbuser myUser --dbpass myPassword --source_db test-data --sdbh sourceDBHOST --sdbuser sourceUser --sdbpass sourcePassword
     I.E. for clone
-    mongo_actions.sh --service_name myService --action mongo_restore --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string  --dbuser myUser --dbpass myPassword --source_db test-data --sdbh sourceDBHOST --sdbuser sourceUser --sdbpass sourcePassword -local true
+    mongo_actions.sh --service_name myService --action mongo_restore --workspace my-data --env_type non-prod --profile my-aws-profile --dbhost mongodb+srv://my-mongodb-connection-string  --dbuser myUser --dbpass myPassword --source_db test-data --sdbh sourceDBHOST --sdbuser sourceUser --sdbpass sourcePassword
 EOM
     exit 1
 }
@@ -100,14 +100,6 @@ while [[ $# -gt 0 ]]; do
       shift # past argument
       shift # past value
       ;;
-    -l|--local)
-      if [[ "$2" == "true" ]];
-      then 
-          LOCAL_RUN="$2"
-      fi
-      shift # past argument
-      shift # past value
-      ;;
     -h|--help)
         usage
         shift # past argument
@@ -132,6 +124,16 @@ if [[ ! -z "$INIT_DB_ENVIRONMENT" ]]; then
 : ${SDBUSER:?Missing -sdbu|--sdbuser, when using source db you must have a source db user type -h for help}
 : ${SDBPASSWORD:?Missing -sdbp|--sdbpass, when using source db you must have a source db password type -h for help}
 fi
+### VALIDATE IF RUNNING LOCAL OR REMOTE ###
+profile_status=$( (aws configure list --profile $AWS_PROFILE) 2>&1) || true
+echo $profile_status
+if [[ $profile_status = *'could not be found'* ]]; then
+  unset LOCAL_RUN
+  echo "Running on remote server"
+else
+  LOCAL_RUN=true
+  echo "Running locally"
+fi
 ### VALIDATE MONGODB URI FORMAT ###
 if [[ -z "$LOCAL_RUN" ]]; then
   DBHOST="mongodb+srv://$DBUSER:$DBPASSWORD@$DBHOST"
@@ -144,12 +146,6 @@ if [[ "$DBHOST" =~ ^mongodb\+srv\:\/\/.*$ ]]; then
 else
     echo "Please use a valid mongoDB uri mongodb+srv://myMongo-server"
     exit 1
-fi
-
-if [[ -z "$LOCAL_RUN" ]]; then
-  echo "Running on remote server"
-else
-  echo "Running localy"
 fi
 
 ### VALIDATE DUMP EXISTS FOR RESTORE ###
