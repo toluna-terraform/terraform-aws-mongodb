@@ -13,6 +13,7 @@ data "aws_s3_bucket_object" "get_dump_data" {
 }
 
 data "aws_ssm_parameter" "sdb_host" {
+  count = var.init_db_environment != "NULL" ? 1 : 0
   name = "/infra/${var.init_db_environment}/db-host"
   depends_on = [
   mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname
@@ -20,6 +21,7 @@ data "aws_ssm_parameter" "sdb_host" {
 }
 
 data "aws_ssm_parameter" "sdb_username" {
+  count = var.init_db_environment != "NULL" ? 1 : 0
   name = "/infra/${var.init_db_environment}/db-username"
   depends_on = [
   mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname
@@ -27,6 +29,7 @@ data "aws_ssm_parameter" "sdb_username" {
 }
 
 data "aws_ssm_parameter" "sdb_password" {
+  count = var.init_db_environment != "NULL" ? 1 : 0
   name = "/infra/${var.init_db_environment}/db-password"
   depends_on = [
   mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname
@@ -45,12 +48,12 @@ data "template_file" "mongo_restore" {
     DBPASSWORD="${random_password.password.result}"
     INIT_DB_ENVIRONMENT="${var.init_db_environment}"
     INIT_DB_AWS_PROFILE="${var.init_db_aws_profile}"
-    SDBHOST="${data.aws_ssm_parameter.sdb_host.value}"
-    SDBUSER="${data.aws_ssm_parameter.sdb_username.value}"
-    SDBPASSWORD="${data.aws_ssm_parameter.sdb_password.value}"
+    SDBHOST=try("${data.aws_ssm_parameter.sdb_host[1].value}","")
+    SDBUSER=try("${data.aws_ssm_parameter.sdb_username[1].value}","")
+    SDBPASSWORD=try("${data.aws_ssm_parameter.sdb_password[1].value}","")
   }
   depends_on = [
-    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname,data.aws_ssm_parameter.sdb_host,data.aws_ssm_parameter.sdb_username,data.aws_ssm_parameter.sdb_password
+    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname
   ]
 }
 
