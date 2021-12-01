@@ -1,6 +1,10 @@
 
 provider "aws" {
   alias = "peer"
+  assume_role {
+    role_arn     = "arn:aws:iam::047763475875:role/acceptore-test"
+    session_name = "accept_peer"
+  }
   region = var.aws_region
 }
 
@@ -28,3 +32,13 @@ resource "aws_vpc_peering_connection_accepter" "main" {
   ]
 }
 
+resource "aws_route" "peer" {
+  for_each                  = toset(var.allowed_envs)
+  provider                  = aws.peer
+  route_table_id            = "rtb-0cd3f85b2b7bab378"
+  destination_cidr_block    = data.mongodbatlas_network_containers.main.results[0].atlas_cidr_block
+  vpc_peering_connection_id = mongodbatlas_network_peering.main[each.key].connection_id
+  depends_on = [
+    aws_vpc_peering_connection_accepter.main
+  ]
+}
