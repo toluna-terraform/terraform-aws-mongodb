@@ -72,6 +72,14 @@ variable "aws_profile" {
   description = "AWS profile"
 } 
 
+variable "aws_region" {
+  description = "AWS region"
+}
+
+variable "aws_account_id" {
+  description = "AWS account id"
+} 
+
 variable "env_type" {
   description = "Environment type prod/non-prod"
 } 

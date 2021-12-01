@@ -73,3 +73,14 @@ data "template_file" "mongo_backup" {
   ]
 }
 
+data "mongodbatlas_network_containers" "main" {
+  project_id     = var.atlasprojectid
+  provider_name  = "AWS"
+}
+
+data "aws_vpc" "main" {
+  for_each = toset(var.allowed_envs)
+  tags = {
+    Name = each.key
+  }
+}
