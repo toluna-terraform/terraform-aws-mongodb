@@ -80,17 +80,5 @@ data "mongodbatlas_network_containers" "main" {
 
 data "aws_vpc" "main" {
   for_each = toset(var.allowed_envs)
-  tags = {
-    Name = each.key
-  }
-}
-
-data "aws_route_table" "main" {
-  for_each = toset(var.allowed_envs)
-  vpc_id = data.aws_vpc.main[each.key].id
-
-  filter {
-    name   = "tag:Name"
-    values = ["*-private"]
-  }
+  id = each.key
 }
