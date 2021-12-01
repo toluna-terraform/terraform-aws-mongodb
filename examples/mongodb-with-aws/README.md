@@ -58,7 +58,6 @@ Note that this example may create resources which can cost money (AWS AtlasMongo
 No inputs.
 
 ## Outputs
-## Outputs
 | Name | Value |
 |------|-------|
 | cluster_connection_sting| cluster connection string( Stripped without "mongodb+srv://" ) |
