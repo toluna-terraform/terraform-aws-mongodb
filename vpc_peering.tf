@@ -1,10 +1,7 @@
 
 provider "aws" {
   alias = "peer"
-  assume_role {
-    role_arn     = "arn:aws:iam::047763475875:role/acceptore-test"
-    session_name = "accept_peer"
-  }
+  profile = var.aws_profile
   region = var.aws_region
 }
 
