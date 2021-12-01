@@ -29,11 +29,6 @@ variable "restore_on_create" {
   description = "Restore DB from dump file"
 }
 
-variable "ip_whitelist" {
-  default = []
-  description = "White listed IP list"
-}
-
 variable "atlas_num_of_shards" {
   default = 1
   description = "Number of shards"
