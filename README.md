@@ -39,6 +39,8 @@ module "mongodb" {
   environment                 = local.environment
   app_name                    = local.app_name
   aws_profile                 = local.aws_profile
+  aws_region                  = "us-east-1"
+  aws_account_id              = data.aws_caller_identity.aws_profile
   env_type                    = local.env_type
   atlasprojectid              = var.atlasprojectid
   atlas_region                = var.atlas_region

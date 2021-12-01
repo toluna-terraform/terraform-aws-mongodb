@@ -21,6 +21,8 @@ module "mongodb" {
   env_type              = "non-prod"
   atlasprojectid        = "1234567890abcdefghijklmno"
   atlas_region          = "US_EAST_1"
+  aws_region            = "us-east-1"
+  aws_account_id        = "1234567890"
   atlas_num_of_replicas = 3
   backup_on_destroy     = true
   restore_on_create     = true
