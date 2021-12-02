@@ -24,6 +24,7 @@ module "mongodb" {
   atlas_num_of_replicas = 3
   backup_on_destroy     = true
   restore_on_create     = true
+  allowed_envs          = "mv_env"
   db_name               = "test-db"
   init_db_environment   = "src-db"
   init_db_aws_profile   = "src-aws-profile"
@@ -35,3 +36,4 @@ module "mongodb" {
   provider_volume_type        = "STANDARD"
   provider_instance_size_name = "M10"
 }
+

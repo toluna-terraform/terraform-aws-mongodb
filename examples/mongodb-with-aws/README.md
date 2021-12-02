@@ -63,6 +63,5 @@ No inputs.
 | cluster_connection_sting| cluster connection string( Stripped without "mongodb+srv://" ) |
 | s3_dump_file | Details about the dump file created |
 | env_type | The environment type created "prod/non-prod" |
-|mongo_atlas | Returns atlas cluster details |
 
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->

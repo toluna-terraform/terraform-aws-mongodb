@@ -39,17 +39,19 @@ module "mongodb" {
   environment                 = local.environment
   app_name                    = local.app_name
   aws_profile                 = local.aws_profile
+  aws_region                  = "us-east-1"
+  aws_account_id              = data.aws_caller_identity.aws_profile
   env_type                    = local.env_type
   atlasprojectid              = var.atlasprojectid
   atlas_region                = var.atlas_region
   atlas_num_of_replicas       = local.env_vars.atlas_num_of_replicas
   backup_on_destroy           = true
   restore_on_create           = true
-  db_name                     = local.env_vars.db_name
-  allowed_envs                = local.env_vars.allowed_envs
+  allowed_envs                = local.allowed_envs
+  vpce_security_groups        = local.vpce_security_groups
+  db_name                     = local.app_name
   init_db_environment         = local.init_db_environment
   init_db_aws_profile         = local.init_db_aws_profile
-  ip_whitelist                = local.ip_whitelist
   atlas_num_of_shards         = 1
   mongo_db_major_version      = "4.2"
   disk_size_gb                = 10
@@ -150,4 +152,4 @@ No inputs.
 | cluster_connection_sting| cluster connection string( Stripped without "mongodb+srv://" ) |
 | s3_dump_file | Details about the dump file created |
 | env_type | The environment type created "prod/non-prod" |
-|mongo_atlas | Returns atlas cluster details |
+
