@@ -6,7 +6,3 @@ output "s3_dump_file" {
     value = data.aws_s3_bucket_object.get_dump_data
 }
 
-output "mongo_atlas" {
-    value = mongodbatlas_network_peering.main
-}
-

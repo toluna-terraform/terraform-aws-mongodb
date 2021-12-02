@@ -80,5 +80,29 @@ data "mongodbatlas_network_containers" "main" {
 
 data "aws_vpc" "main" {
   for_each = toset(var.allowed_envs)
-  id = each.key
+  id = split("=",each.key)[1]
 }
+data "aws_subnet_ids" "main" {
+  for_each           = toset(var.allowed_envs)
+  vpc_id             = split("=",each.key)[1]
+  
+  filter {
+    name   = "tag:Name"
+    values = ["*-private-*"]
+  }
+}
+
+data "aws_security_groups" "main" {
+  for_each           = toset(var.allowed_envs)
+  
+  filter {
+    name   = "vpc-id"
+    values = [split("=",each.key)[1]]
+  }
+
+  filter {
+    name   = "tag:Name"
+    values = ["sg-*-*-ecs"]
+  }
+}
+

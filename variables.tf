@@ -92,3 +92,7 @@ variable "init_db_aws_profile" {
 variable "allowed_envs" {
   description = "The app environment allowed for this db"
 }
+
+variable "vpce_security_groups" {
+  description = "The security groups for the vpc endpoint"
+}
