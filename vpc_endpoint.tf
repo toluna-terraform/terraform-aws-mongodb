@@ -6,7 +6,7 @@ resource "mongodbatlas_privatelink_endpoint" "main" {
 
 resource "aws_vpc_endpoint" "main" {
   for_each           = toset(var.allowed_envs)
-  vpc_id             = each.key
+  vpc_id             = split("=",each.key)[1]
   service_name       = mongodbatlas_privatelink_endpoint.main.endpoint_service_name
   vpc_endpoint_type  = "Interface"
   subnet_ids         = data.aws_subnet_ids.main[each.key].ids
