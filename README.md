@@ -39,8 +39,6 @@ module "mongodb" {
   environment                 = local.environment
   app_name                    = local.app_name
   aws_profile                 = local.aws_profile
-  aws_region                  = "us-east-1"
-  aws_account_id              = data.aws_caller_identity.aws_profile
   env_type                    = local.env_type
   atlasprojectid              = var.atlasprojectid
   atlas_region                = var.atlas_region
@@ -48,7 +46,6 @@ module "mongodb" {
   backup_on_destroy           = true
   restore_on_create           = true
   allowed_envs                = local.allowed_envs
-  vpce_security_groups        = local.vpce_security_groups
   db_name                     = local.app_name
   init_db_environment         = local.init_db_environment
   init_db_aws_profile         = local.init_db_aws_profile
@@ -60,7 +57,6 @@ module "mongodb" {
   provider_instance_size_name = "M10"
 }
 ```
-
 
 To run the mongorestore/mongodump script mnually (mongo_actions.sh): 
 - cd to the path containing your environment.json (see examples)

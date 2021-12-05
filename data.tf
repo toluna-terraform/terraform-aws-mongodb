@@ -73,36 +73,4 @@ data "template_file" "mongo_backup" {
   ]
 }
 
-data "mongodbatlas_network_containers" "main" {
-  project_id     = var.atlasprojectid
-  provider_name  = "AWS"
-}
-
-data "aws_vpc" "main" {
-  for_each = toset(var.allowed_envs)
-  id = split("=",each.key)[1]
-}
-data "aws_subnet_ids" "main" {
-  for_each           = toset(var.allowed_envs)
-  vpc_id             = split("=",each.key)[1]
-  
-  filter {
-    name   = "tag:Name"
-    values = ["*-private-*"]
-  }
-}
-
-data "aws_security_groups" "main" {
-  for_each           = toset(var.allowed_envs)
-  
-  filter {
-    name   = "vpc-id"
-    values = [split("=",each.key)[1]]
-  }
-
-  filter {
-    name   = "tag:Name"
-    values = ["sg-*-*-ecs"]
-  }
-}
 
