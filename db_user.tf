@@ -14,7 +14,7 @@ resource "random_password" "password" {
 
 resource "aws_ssm_parameter" "db_password" {
   for_each =  toset(var.allowed_envs)
-  name        = "/infra/${split("=",each.key)[0]}/db-password"
+  name        = "/infra/${each.key}/db-password"
   description = "terraform_db_password"
   type        = "SecureString"
   value       = random_password.password.result
@@ -23,7 +23,7 @@ resource "aws_ssm_parameter" "db_password" {
 
 resource "aws_ssm_parameter" "db_username" {
   for_each =  toset(var.allowed_envs)
-  name        = "/infra/${split("=",each.key)[0]}/db-username"
+  name        = "/infra/${each.key}/db-username"
   description = "terraform_db_username"
   type        = "SecureString"
   value       = "${var.app_name}-${var.environment}-dbuser"

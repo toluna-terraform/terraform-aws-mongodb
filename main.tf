@@ -18,7 +18,7 @@ resource "mongodbatlas_cluster" "main" {
 
 resource "aws_ssm_parameter" "db_hostname" {
   for_each =  toset(var.allowed_envs)
-  name        = "/infra/${split("=",each.key)[0]}/db-host"
+  name        = "/infra/${each.key}/db-host"
   description = "terraform_db_hostname"
   type        = "SecureString"
   value       = trimprefix("${mongodbatlas_cluster.main.srv_address}","mongodb+srv://")
