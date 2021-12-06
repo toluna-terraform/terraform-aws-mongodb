@@ -3,7 +3,7 @@ resource "mongodbatlas_cluster" "main" {
   name                         = "${var.app_name}-${var.environment}"
   num_shards                   = var.atlas_num_of_shards
   replication_factor           = var.atlas_num_of_replicas
-  provider_backup_enabled      = true
+  cloud_backup                 = true
   auto_scaling_disk_gb_enabled = true
   mongo_db_major_version       = var.mongo_db_major_version
 
