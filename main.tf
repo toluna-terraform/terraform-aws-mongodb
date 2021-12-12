@@ -21,7 +21,7 @@ resource "aws_ssm_parameter" "db_hostname" {
   name        = "/infra/${each.key}/db-host"
   description = "terraform_db_hostname"
   type        = "SecureString"
-  value       = trimprefix("${mongodbatlas_cluster.main.srv_address}","mongodb+srv://")
+  value       = trimprefix("${mongodbatlas_cluster.main.connection_strings[0].private_endpoint[1].srv_connection_string}","mongodb+srv://")
   overwrite   = true
   depends_on = [
     mongodbatlas_cluster.main
