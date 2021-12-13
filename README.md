@@ -46,6 +46,7 @@ module "mongodb" {
   backup_on_destroy           = true
   restore_on_create           = true
   allowed_envs                = local.allowed_envs
+  aws_vpce                    = data.terraform_remote_state.app
   db_name                     = local.app_name
   init_db_environment         = local.init_db_environment
   init_db_aws_profile         = local.init_db_aws_profile

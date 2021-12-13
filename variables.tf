@@ -84,3 +84,7 @@ variable "init_db_aws_profile" {
 variable "allowed_envs" {
   description = "The app environment allowed for this db"
 }
+
+variable "aws_vpce" {
+  description = "The vpcednpoint for matching envs"
+}
