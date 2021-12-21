@@ -199,14 +199,15 @@ mongo_backup() {
   fi
   if [[ -z "$LOCAL_RUN" ]]; then
     echo "Taking mongodb dump..."
-    ~/mongodump --uri $DBHOST/$DBNAME --gzip -o /tmp/$DBNAME
+    mkdir -p /tmp/${SERVICE_NAME}_dbdump
+    ~/mongodump --uri $DBHOST/$DBNAME --gzip -o /tmp/${SERVICE_NAME}_dbdump/$DBNAME
     ls -lrt -R /tmp
     echo "Packing dump to zip file..."
-    tar cvf /tmp/$DBNAME.tar -C /tmp/$DBNAME/ .
+    tar cvf /tmp/${SERVICE_NAME}_dbdump/$DBNAME.tar -C /tmp/${SERVICE_NAME}_dbdump/$DBNAME .
     echo "Uploading dump to S3..."
-    aws s3 cp /tmp/$DBNAME.tar s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/
+    aws s3 cp /tmp/${SERVICE_NAME}_dbdump/$DBNAME.tar s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/
     echo "Cleaning up..."
-    rm -rf /tmp/$DBNAME.tar /tmp/$DBNAME
+    rm -rf /tmp/${SERVICE_NAME}_dbdump/$DBNAME.tar /tmp/${SERVICE_NAME}_dbdump/
   else
     [ ! "$(docker ps | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
     docker exec -i mongodocker /usr/bin/mongodump --uri "$DBHOST/$DBNAME" -u$DBUSER -p$DBPASSWORD --gzip -o /tmp/$DBNAME
