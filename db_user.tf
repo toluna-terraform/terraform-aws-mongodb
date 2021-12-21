@@ -17,7 +17,7 @@ resource "aws_ssm_parameter" "db_password" {
   name        = "/infra/${each.key}/db-password"
   description = "terraform_db_password"
   type        = "SecureString"
-  value       = random_password.password.result
+  value       = "This is an env0 test"#random_password.password.result
   overwrite   = true
 }
 
