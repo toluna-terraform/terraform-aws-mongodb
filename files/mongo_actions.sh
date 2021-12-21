@@ -199,6 +199,7 @@ mongo_backup() {
   fi
   if [[ -z "$LOCAL_RUN" ]]; then
     echo "Taking mongodb dump..."
+    echo $DBHOST
     mkdir -p /tmp/${SERVICE_NAME}_dbdump
     ~/mongodump --uri $DBHOST/$DBNAME --gzip -o /tmp/${SERVICE_NAME}_dbdump/$DBNAME
     ls -lrt -R /tmp
