@@ -137,6 +137,7 @@ fi
 ### VALIDATE MONGODB URI FORMAT ###
 if [[ -z "$LOCAL_RUN" ]]; then
   DBHOST="mongodb+srv://$DBUSER:$DBPASSWORD@$DBHOST"
+  echo "${DBHOST}"
   unset AWS_PROFILE
 else
   DBHOST="mongodb+srv://$DBHOST"
@@ -198,8 +199,7 @@ mongo_backup() {
     fi
   fi
   if [[ -z "$LOCAL_RUN" ]]; then
-    echo "Taking mongodb dump..."
-    echo $DBHOST
+    echo "Taking mongodb dump...${DBHOST}"
     mkdir -p /tmp/${SERVICE_NAME}_dbdump
     ~/mongodump --uri $DBHOST/$DBNAME --gzip -o /tmp/${SERVICE_NAME}_dbdump/$DBNAME
     ls -lrt -R /tmp
