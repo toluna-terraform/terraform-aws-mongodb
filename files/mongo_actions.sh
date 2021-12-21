@@ -203,7 +203,7 @@ mongo_backup() {
     mkdir -p /tmp/${SERVICE_NAME}_dbdump
     ~/mongodump --uri $DBHOST/$DBNAME --gzip -o /tmp/${SERVICE_NAME}_dbdump/$DBNAME
     ls -lrt -R /tmp
-    echo "Packing dump to zip file..."
+    echo "Packing dump to zip file...${DBHOST}"
     tar cvf /tmp/${SERVICE_NAME}_dbdump/$DBNAME.tar -C /tmp/${SERVICE_NAME}_dbdump/$DBNAME .
     echo "Uploading dump to S3..."
     aws s3 cp /tmp/${SERVICE_NAME}_dbdump/$DBNAME.tar s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/
