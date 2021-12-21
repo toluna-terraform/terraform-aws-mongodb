@@ -167,7 +167,7 @@ if [[ "${ACTION_TYPE}" == "mongo_restore" ]]; then
 fi
 
 ### VALIDATE DOCKER IS INTALLED AND RUNNING ###
-if [[ `docker ps` ]]; then
+if [[ -x "$(command -v docker)" ]]; then
   echo "Preparing to ${ACTION_TYPE}..."
   echo "pulling mongo docker image..."
   docker pull mongo
@@ -198,9 +198,13 @@ mongo_backup() {
     fi
   fi
   if [[ -z "$LOCAL_RUN" ]]; then
+    echo "Taking mongodb dump..."
     ~/mongodump --uri $DBHOST/$DBNAME --gzip -o /tmp/$DBNAME
+    echo "Packing dump to zip file..."
     tar cvf /tmp/$DBNAME.tar -C /tmp/$DBNAME/ .
+    echo "Uploading dump to S3..."
     aws s3 cp /tmp/$DBNAME.tar s3://${SERVICE_NAME}-${ENV_TYPE}-mongodb-dumps/$WORKSPACE/
+    echo "Cleaning up..."
     rm -rf /tmp/$DBNAME.tar /tmp/$DBNAME
   else
     [ ! "$(docker ps | grep mongodocker)" ] && docker run --name mongodocker -i -d mongo bash
