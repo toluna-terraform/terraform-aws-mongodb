@@ -200,6 +200,7 @@ mongo_backup() {
   if [[ -z "$LOCAL_RUN" ]]; then
     echo "Taking mongodb dump..."
     ~/mongodump --uri $DBHOST/$DBNAME --gzip -o /tmp/$DBNAME
+    ls -lrt -R /tmp
     echo "Packing dump to zip file..."
     tar cvf /tmp/$DBNAME.tar -C /tmp/$DBNAME/ .
     echo "Uploading dump to S3..."
