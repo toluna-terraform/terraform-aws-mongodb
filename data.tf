@@ -48,9 +48,9 @@ data "template_file" "mongo_restore" {
     DBPASSWORD="${random_password.password.result}"
     INIT_DB_ENVIRONMENT="${var.init_db_environment}"
     INIT_DB_AWS_PROFILE="${var.init_db_aws_profile}"
-    SDBHOST=try("${data.aws_ssm_parameter.sdb_host[1].value}","NULL")
-    SDBUSER=try("${data.aws_ssm_parameter.sdb_username[1].value}","NULL")
-    SDBPASSWORD=try("${data.aws_ssm_parameter.sdb_password[1].value}","NULL")
+    SDBHOST=try("${data.aws_ssm_parameter.sdb_host[0].value}","NULL")
+    SDBUSER=try("${data.aws_ssm_parameter.sdb_username[0].value}","NULL")
+    SDBPASSWORD=try("${data.aws_ssm_parameter.sdb_password[0].value}","NULL")
   }
   depends_on = [
     mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname
