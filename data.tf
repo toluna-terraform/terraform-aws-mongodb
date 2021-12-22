@@ -14,7 +14,7 @@ data "aws_s3_bucket_object" "get_dump_data" {
 
 data "aws_ssm_parameter" "sdb_host" {
   count = var.init_db_environment != "NULL" ? 1 : 0
-  name = "/infra/${var.init_db_environment}/db-host"
+  name = "/infra/${var.init_db_environment}/sdb-host"
   depends_on = [
   mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname
 ]

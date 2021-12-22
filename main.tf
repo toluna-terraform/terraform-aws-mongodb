@@ -27,6 +27,19 @@ resource "aws_ssm_parameter" "db_hostname" {
     mongodbatlas_cluster.main
   ]
 }
+
+resource "aws_ssm_parameter" "sdb_hostname" {
+  for_each =  toset(var.allowed_envs)
+  name        = "/infra/${each.key}/sdb-host"
+  description = "terraform_db_hostname"
+  type        = "SecureString"
+  value       = trimprefix(mongodbatlas_cluster.main.srv_address,"mongodb+srv://")
+  overwrite   = true
+  depends_on = [
+    mongodbatlas_cluster.main
+  ]
+}
+
 variable "hide_sensitive" {
   type      = string
   default   = "hide_sensitive"
