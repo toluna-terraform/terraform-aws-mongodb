@@ -16,7 +16,7 @@ data "aws_ssm_parameter" "sdb_host" {
   count = var.init_db_environment != "NULL" ? 1 : 0
   name = "/infra/${var.init_db_environment}/sdb-host"
   depends_on = [
-  mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname
+  mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password
 ]
 }
 
@@ -24,7 +24,7 @@ data "aws_ssm_parameter" "sdb_username" {
   count = var.init_db_environment != "NULL" ? 1 : 0
   name = "/infra/${var.init_db_environment}/db-username"
   depends_on = [
-  mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname
+  mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password
 ]
 }
 
@@ -32,7 +32,7 @@ data "aws_ssm_parameter" "sdb_password" {
   count = var.init_db_environment != "NULL" ? 1 : 0
   name = "/infra/${var.init_db_environment}/db-password"
   depends_on = [
-  mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname
+  mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password
 ]
 }
 
@@ -53,7 +53,7 @@ data "template_file" "mongo_restore" {
     SDBPASSWORD=try("${data.aws_ssm_parameter.sdb_password[0].value}","NULL")
   }
   depends_on = [
-    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname
+    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password
   ]
 }
 
