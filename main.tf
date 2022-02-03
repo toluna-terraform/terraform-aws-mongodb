@@ -51,7 +51,7 @@ resource "null_resource" "db_backup" {
     }
   }
   depends_on = [
-    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, data.template_file.mongo_backup
+    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, data.template_file.mongo_backup
   ]
 }
 
@@ -67,6 +67,6 @@ resource "null_resource" "db_restore" {
     }
   }
   depends_on = [
-    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, aws_ssm_parameter.db_hostname, data.template_file.mongo_restore
+    mongodbatlas_database_user.main, aws_ssm_parameter.db_username, aws_ssm_parameter.db_password, data.template_file.mongo_restore
   ]
 }
