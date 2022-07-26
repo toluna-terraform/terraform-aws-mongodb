@@ -1,7 +1,7 @@
-output "cluster_connection_sting" {
+output "cluster_connection_string" {
     value = split("//", mongodbatlas_cluster.main.connection_strings.0.standard_srv)[1]
 }
 
 output "s3_dump_file" {
-    value = "${data.aws_s3_bucket_object.get_dump_data}"
+    value = data.aws_s3_bucket_object.get_dump_data
 }

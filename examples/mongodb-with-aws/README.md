@@ -60,7 +60,7 @@ No inputs.
 ## Outputs
 | Name | Value |
 |------|-------|
-| cluster_connection_sting| cluster connection string( Stripped without "mongodb+srv://" ) |
+| cluster_connection_string| cluster connection string( Stripped without "mongodb+srv://" ) |
 | s3_dump_file | Details about the dump file created |
 | env_type | The environment type created "prod/non-prod" |
 

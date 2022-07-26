@@ -31,15 +31,14 @@ resource "aws_ssm_parameter" "sdb_hostname" {
 variable "hide_sensitive" {
   type      = string
   default   = "hide_sensitive"
-  sensitive = true
 }
 
 resource "null_resource" "db_backup" {
   count = var.backup_on_destroy ? 1 : 0
   triggers = {
-    address = "${mongodbatlas_cluster.main.srv_address}",
-    backup_file = "${data.template_file.mongo_backup.rendered}",
-    hide_sensitive = "${var.hide_sensitive}"
+    address = mongodbatlas_cluster.main.srv_address,
+    backup_file = data.template_file.mongo_backup.rendered,
+    hide_sensitive = var.hide_sensitive
   }
 
   provisioner "local-exec" {
@@ -58,7 +57,7 @@ resource "null_resource" "db_backup" {
 resource "null_resource" "db_restore" {
   count = var.restore_on_create ? 1 : 0
   triggers = {
-    address = "${mongodbatlas_cluster.main.srv_address}"
+    address = mongodbatlas_cluster.main.srv_address
   }
   provisioner "local-exec" {
     command = "${path.module}/files/${data.template_file.mongo_restore.rendered}"

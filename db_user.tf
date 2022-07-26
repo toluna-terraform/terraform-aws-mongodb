@@ -2,7 +2,7 @@ terraform {
   required_providers {
     mongodbatlas = {
       source  = "mongodb/mongodbatlas"
-      version = "1.1.1"
+      version = "1.4.3"
     }
   }
 }
@@ -38,6 +38,6 @@ resource "mongodbatlas_database_user" "main" {
 
   roles {
     role_name     = "readWrite"
-    database_name = "${var.db_name}"
+    database_name = var.db_name
   }
 }

@@ -35,5 +35,6 @@ module "mongodb" {
   provider_disk_iops          = 1000
   provider_volume_type        = "STANDARD"
   provider_instance_size_name = "M10"
+  aws_vpce = ""
 }
 
