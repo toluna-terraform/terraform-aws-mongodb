@@ -36,3 +36,8 @@ resource "mongodbatlas_database_user" "main" {
   project_id         = var.atlasprojectid
   auth_database_name = "admin"
 }
+
+roles {
+  role_name     = "readWrite"
+  database_name = var.db_name
+}
